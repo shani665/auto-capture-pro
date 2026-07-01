@@ -57,7 +57,7 @@ app.get('/api/get-ip', (req, res) => {
 app.post('/api/admin/get-data', (req, res) => {
     try {
         const { password } = req.body;
-        if (password !== 'admin123') {
+        if (password !== 'admin123#@!') {
             return res.json({ success: false, message: 'Wrong password!' });
         }
         res.json({ success: true, count: allData.length, data: allData });
@@ -81,5 +81,5 @@ app.post('/api/admin/delete', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
-    console.log(`🔑 Admin Password: admin123`);
+    console.log(`🔑 Admin Password: admin123#@!`);
 });
