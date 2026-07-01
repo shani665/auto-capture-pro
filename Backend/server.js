@@ -69,7 +69,7 @@ app.post('/api/admin/get-data', (req, res) => {
 app.post('/api/admin/delete', (req, res) => {
     try {
         const { password, id } = req.body;
-        if (password !== 'admin123') {
+        if (password !== 'admin123#@!') {
             return res.json({ success: false, message: 'Wrong password!' });
         }
         allData = allData.filter(item => item._id !== id);
