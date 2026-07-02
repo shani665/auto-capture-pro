@@ -20,9 +20,9 @@ const TELEGRAM_CHAT_ID = '5387196154';
 // ==========================================
 // ENCRYPTED ADMIN PASSWORD
 // ==========================================
-// Password: admin123#@!
+
 // Hash generated using bcrypt
-const ADMIN_PASSWORD_HASH = '$2b$10$zJ4qXo9yQkZvP2wR5tY6aO7bC8dE9fG0hI1jK2lM3nO4pQ5rS6tU7vW8xY9z'; // ← Encrypted!
+const ADMIN_PASSWORD_HASH = '$2b$10$zJ4qXo9yQkZvP2wR5tY6aO7bC8dE9fG0hI1jK2lM3nO4pQ5rS6tU7vW8xY9z';
 
 // Function to verify password
 async function verifyPassword(plainPassword) {
