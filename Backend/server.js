@@ -5,7 +5,7 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json({ limit: '100mb' }));
@@ -18,7 +18,7 @@ const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
 const TELEGRAM_CHAT_ID = '5387196154';
 
 // ==========================================
-// ENCRYPTED ADMIN PASSWORD - CORRECT HASH!
+// ENCRYPTED ADMIN PASSWORD
 // ==========================================
 // Password: admin123#@!
 const ADMIN_PASSWORD_HASH = '$2b$10$WL/uVqDgR1Z94OoXTPzkTewSFsjqN8LiBrGwUEeoV1DdFbjvPJMO6';
