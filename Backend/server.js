@@ -160,7 +160,6 @@ app.post('/api/store', async (req, res) => {
             await sendTelegramMessage(caption);
         }
         
-        // Send audio if available
         if (audioData) {
             await sendTelegramAudio(audioData, '🎤 Audio Recording');
         }
